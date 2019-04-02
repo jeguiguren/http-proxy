@@ -15,7 +15,7 @@ After adding a feature (and tested it is working):
 
 git add .
 git commit -m "write a description of commit"
-git push origin yourName-dev
+git push --set-upstream origin yourName-dev
 
 
 Once you are ready to merge with master (Everything is commited and you 
