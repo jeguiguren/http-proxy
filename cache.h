@@ -1,21 +1,29 @@
 #ifndef CACHE_H_
 #define CACHE_H_
 
-#include <functional>
-#include <unordered_map>
-#include <iostream>
-#include <cstdlib>
+#include <queue>
+#include <vector>
+#include <string>
 #include <time.h> 
 #include <locale>
-#include<vector>
-#include<string>
+#include <stdio.h>
+#include <fstream>
+#include <cstdlib>
+#include <unistd.h>
+#include <iostream>
+#include <exception>
+#include <functional>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <unordered_map>
 
 
 using namespace std;
 
 //Confirm if dataSize if needed cause it can be just the size of the string
-
-class Indexer{
+const char FILENAME[13] = "cachelog.txt";
+class Cache{
 public:
 	/***************************
 		Function: constructor
@@ -36,13 +44,29 @@ public:
 	/***************************
 		Function: cacheElement
 		Parameters: name: key of the element to be cached
+					userRequest: the request gotten from the user
 					data: data to be chached
+					hostKey: key used to cache the TCP connection in the server
+							 cache
 					TTL: time to stay in cache
 		Returns: Nothing
 		Puroprse: adds the server response to the cache if it doesn't exist or
 				  updates it if it already exists
 	******************************/
-	void cacheElement(string name, string data, int TTL);
+	void cacheElement(string name, string userRequest, 
+										  string data, string hostKey, int TTL);
+
+
+	/***************************
+		Function: cacheConnection
+		Parameters: key: key of the element to be cached (hostname concatenated 
+						 with port number)
+					sockfd: file descriptor for a connection
+		Returns: Nothing
+		Puroprse: adds a new open TCP connection to the connection cache
+	******************************/
+	//void cacheConnection(string key, int sockfd, sockaddr_in serveradd);
+	void cacheConnection(string key, int sockfd);
 
 	/******************************
 		Function: dataInCache
@@ -53,6 +77,14 @@ public:
 	bool dataInCache(string name);
 
 	/******************************
+		Function: availableConnection
+		Parameters: key: key of the connection to be searched for
+		Returns: true if the connection exists and false otherwise
+		Purpose: seraches for the specified connection in the cache
+	*******************************/
+	bool availableConnection(string key);
+
+	/******************************
 		Function: getDataFromCache
 		Parameters: name: key of the element to be returned
 		Returns: data associated with HTTP/HTTPS request (name)
@@ -61,27 +93,75 @@ public:
 	string getDataFromCache(string name);
 
 	/******************************
-		Function: getAllStaleData
-		Parameters: none
-		Returns: vector containing stale data
-		Purpose: returns a vector containing all the data in the list that 
-				 has gone stale
+		Function: getDataFromCache
+		Parameters: name: key of the connection to be returned
+		Returns: file descriptor of the connection
+		Purpose: get an open tcp connection associated with the key if it exists
 	*******************************/
-	vector<string> getAllStaleData();
+	int getTcpConnection(string key);
 
-
+	/******************************
+		Function: upDatecache
+		Parameters: 
+		Returns: updates stale data in the cache
+	*******************************/
+	void upDatecache();
 
 private:
-	struct cacheNode {
+	enum class Event { CND, DD, RD, UD, FUD, CNC, RC };
+	//typedef struct sockaddr_in sockaddr_in;
+	struct dataCacheNode {
 		string name;
+		string userRequest;
 		string data;
-		int timeStored, TTL;
-		cacheNode(string key, string value, int size, int TS, int ttl): 
-			name(key), data(value), timeStored(TS), TTL(ttl){}
+		string hostKey;
+		int timeStored;
+		int TTL;
+		int lastAccessed;
+		int hitRate;
+	}; 
+
+	struct tcpConnectionsNode{
+		string key;
+		int sockfd;
 	};
 
-	unordered_map<string, cacheNode> table;
+	unordered_map<string, dataCacheNode> dataCache;
+	unordered_map<string, tcpConnectionsNode> tcpConnections;
 
-	static const int LEEWAYTIME = 5;
+	/*data in the cache that has not been accessed in time >= OLDTIME is 
+	  considered obselete*/
+	static const int LEEWAY = 10;
+	static const int OLDTIME = 7200;
+	static const int MAXDATACACHESIZE = 50;
+
+	/******************************
+		Function: removeOldData
+		Parameters: none
+		Returns: nothing
+		Purpose: deletes data that has not been accessed in a while;
+	*******************************/
+	void removeOldData();
+
+	/******************************
+		Function: existsInCahe
+		Parameters: key: key to be searched for
+					data: true if we are seraching the datacache, false otherwise
+		Returns: bool
+		Purpose: checks if the key exists in the specified cache
+	*******************************/
+	bool existsInCahe(string key, bool data);
+
+	/******************************
+		Function: logEvent
+		Parameters: event: event to be logged
+					cacheElement: element event happened to
+		Returns: 
+		Purpose: logs a cache event in cachelog.txt
+	*******************************/
+	void logEvent(Event event, string cacheElement);
+
+	double getPriority(dataCacheNode data);
+	void updateElement(string key);
 };
 #endif
