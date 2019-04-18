@@ -209,8 +209,8 @@ double Cache::getPriority(dataCacheNode data){
 void Cache::updateElement(string key){
 	dataCacheNode data = dataCache.at(key);
 	string request = data.userRequest;
-	char charRequest[request.length() + 1];
-	strcpy(charRequest, request.c_str());
+	//char charRequest[request.length() + 1];
+	//strcpy(charRequest, request.c_str());
 	//int connection = tcpConnections.at(data.hostKey).sockfd;
 	//TO-DO: complete this when you figure out SSL
 }

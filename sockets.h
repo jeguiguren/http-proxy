@@ -37,8 +37,8 @@ public:
 	~Sockets();
 
 	struct userRequest{
-		string request;
-		string hostname;
+		char *request;
+		char *hostname;
 		int portno;
 	};
 
@@ -102,7 +102,7 @@ public:
 private:
 
 	static const int REQUESTBUFSIZE = 1024;
-	static const int RESPONSEBUFSIZE = 100000;
+	static const int RESPONSEBUFSIZE = 1000;
 
 };
 #endif

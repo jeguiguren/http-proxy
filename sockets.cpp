@@ -49,6 +49,7 @@ int Sockets::create_proxy_address(int portno){
         error("ERROR on binding");
     if (listen(listen_sock, 10) < 0)
         error("ERROR on listen");
+    cout << "Created the proxy" << endl;
     return listen_sock;
 }
 
@@ -60,18 +61,36 @@ int Sockets::accept_new_connection(int listen_sock){
 	int clientlen;
 	struct sockaddr_in clientaddr;
 	clientlen = sizeof(clientaddr);
-	return accept(listen_sock, (struct sockaddr *) &clientaddr, 
-														(socklen_t*)&clientlen);
+    int sock_fd = accept(listen_sock, (struct sockaddr *) &clientaddr, 
+                                                        (socklen_t*)&clientlen);
+    cout << "Accepted connection to: " << sock_fd << endl;
+	return sock_fd;
 }
 
-int getportno(string request){
-	(void)request;
-	return 80;
+
+//TO-DO: change to use jorge's util file
+int getportno(char *request){
+	char *holder;
+    int portno = 0;
+    holder = strstr(request, "Host:") + 6;
+    if (strchr(holder, ':'))
+        portno = atoi(strchr(holder, ':') + 1);
+    if (portno == 0)
+        portno = 80;
+    return portno;
 }
 
-string gethostname(string request){
-	(void)request;
-	return "www.cs.cmu.edu";
+char *gethostname(char *request){
+    char *holder;
+    int i = 0;
+    char *hostname = (char* )malloc(100);
+    holder = strstr(request, "Host:") + 6;
+    while (holder[i] != ':' && holder[i] != '\r'){
+        hostname[i] = holder[i];
+        i++;
+    }
+    hostname[i] = '\0';
+	return hostname;
 }
 
 
@@ -83,17 +102,15 @@ Sockets::userRequest Sockets::get_client_request(int client_fd){
 	//TO-DO: find out why there is empty space at the end of the request
 	userRequest clientRequest;
 	int bytes_read;
-	string user_request = "", toadd = "";
-	char request[REQUESTBUFSIZE];
+	char *request = (char *)malloc(REQUESTBUFSIZE);
 	bzero(request, REQUESTBUFSIZE);
 	bytes_read = read(client_fd, request, REQUESTBUFSIZE);
-	if (bytes_read < 0) 
+	if (bytes_read <= 0) 
 	    throw runtime_error("ERROR reading from socket");
-	toadd = request;
-	user_request = user_request + toadd;
-    clientRequest.request = user_request;
-    clientRequest.hostname = gethostname(user_request);
-    clientRequest.portno = getportno(user_request);
+    clientRequest.request = request;
+    clientRequest.hostname = gethostname(request);
+    clientRequest.portno = getportno(request);
+    cout << "got client request" << endl;
 	return clientRequest;
 }
 
@@ -102,6 +119,7 @@ Sockets::userRequest Sockets::get_client_request(int client_fd){
 	Puroprse: connects to the server
 *******************************************************************************/
 int Sockets::connect_to_server(int portno, string host_address){
+    //TO-DO: Figure out how to change the parameter to a pointer
 	int sockfd;
 	char hostname[host_address.length() + 1];
 	strcpy(hostname, host_address.c_str());
@@ -109,10 +127,10 @@ int Sockets::connect_to_server(int portno, string host_address){
     struct hostent *server;
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
     if (sockfd < 0) 
-        error("ERROR opening socket");
+        throw runtime_error("ERROR opening socket");
     server = gethostbyname(hostname);
     if (server == NULL) {
-        fprintf(stderr,"ERROR, no such host as %s\n", hostname);
+        throw runtime_error("ERROR, no such host");
         exit(0);
     }
     bzero((char *) &serveraddr, sizeof(serveraddr));
@@ -122,6 +140,7 @@ int Sockets::connect_to_server(int portno, string host_address){
     serveraddr.sin_port = htons(portno);
     if (connect(sockfd, (struct sockaddr *) &serveraddr, sizeof(serveraddr)) <0) 
         throw runtime_error("ERROR connecting to server");
+    cout << "Connected to server" << endl;
     return sockfd;
 }
 
@@ -142,8 +161,8 @@ Sockets::serverResponse Sockets::writeandread(int sockfd, string request){
     bzero(serverResponse, RESPONSEBUFSIZE);
     n = 1;
     char *temp = (char *)malloc(sizeof(char) * 0);
-    while (n > 0){
-    	n = read(sockfd, serverResponse, RESPONSEBUFSIZE);
+    cout << "Started reading" << endl;
+    while ((n = read(sockfd, serverResponse, RESPONSEBUFSIZE))> 0){
     	bytes_read += n;
         temp = (char *)realloc(temp, sizeof(char) * bytes_read);
         while(i != bytes_read){
@@ -154,9 +173,12 @@ Sockets::serverResponse Sockets::writeandread(int sockfd, string request){
         j = 0;
         bzero(serverResponse, RESPONSEBUFSIZE);
     }
+    cout << "Done reading" << endl;
+    if (n < 0)
+        throw runtime_error("ERROR reading from client");
     response.bytes_read = bytes_read;
     response.data = temp;
-    cout << "bytes_read: " << bytes_read << endl;
+    cout << "Wrote and read from server" << endl;
     return response;
 }
 
@@ -166,12 +188,10 @@ Sockets::serverResponse Sockets::writeandread(int sockfd, string request){
 *******************************************************************************/
 void Sockets::writetoclient(int sockfd,  serverResponse response){
 	int n = write(sockfd, response.data, response.bytes_read);
-	cout << "bytes written: " << n << endl;
     if (n < 0) 
         throw runtime_error("ERROR writing to client");
+    cout << "Wrote to client" << endl;
 }
-
-//TO-DO: fix the data reading and writing
 
 
 
