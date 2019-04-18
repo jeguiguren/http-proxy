@@ -5,7 +5,8 @@
 #include <unistd.h>
 #include <iostream>
 #include "util.h"
-#include "cache.h"
+//#include "cache.h"
+#include "bandwidth.h"
 #define REQUEST_SIZE 512
 using namespace std;
 
@@ -134,7 +135,7 @@ void serve_indefinitely(int sockfd) {
 	free(request);
 }
 
-*/
+
 
 void proxy_server(int port_num) {
 	struct sockaddr_in se_addr;
@@ -157,7 +158,7 @@ void proxy_server(int port_num) {
 	close(sockfd);	
 	
 }
-
+*/
 
 int main(int argc, char *argv[])
 {
@@ -166,7 +167,10 @@ int main(int argc, char *argv[])
 	   exit(0);
 	}
 	
-	proxy_server(atoi(argv[1]));
+	//proxy_server(atoi(argv[1]));
+
+
+	Bandwidth band;
 	return 0;
 }
 

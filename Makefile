@@ -5,7 +5,7 @@ LDFLAGS  = -g3
 
 # the build target executable:
 TARGET = proxy
-DEPS = cache.cpp
+DEPS = bandwidth.cpp #cache.cpp 
 
 all: $(TARGET)
 
