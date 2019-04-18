@@ -1,2 +1,6 @@
-curl -v -i http://www.cs.tufts.edu/comp/112/index.html > tests/o1.txt
-curl -x localhost:$1 -v -i http://www.cs.tufts.edu/comp/112/index.html > tests/e1.txt
+curl -v -i http://www.cs.tufts.edu/comp/112/index.html > e1.txt 2>&1
+curl -v -i -x localhost:$1 http://www.cs.tufts.edu/comp/112/index.html > o1.txt 2>&1
+
+colordiff e1.txt o1.txt
+rm e1.txt
+rm o1.txt

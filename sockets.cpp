@@ -5,10 +5,9 @@ using namespace std;
 
 
 int write_message(int sockfd, char *message, int messageSize, int append) {
-    if (append) {
-        message = strcat(message, "\r\n\r\n");
-        messageSize += 4;    
-    }
+    //cout << message;
+    //message = strcat(message, "\r\n\r\n");
+    //messageSize += 4;    
     cout << "Writing message of size " << messageSize << endl;
     int n = write(sockfd, message, messageSize);
     if (n < 0)
@@ -20,7 +19,7 @@ int read_message(int sockfd, char **message, int scale) {
     int n = 0, received = 0;
     char *buffer = (char*) malloc(scale);
     int bufSize = scale;
-    while ((n = read(sockfd, (void *)(buffer + received), scale)) == scale) {
+    while ((n = read(sockfd, (void *)(buffer + received), scale)) > 0) {
         received += n;
         bufSize += scale;
         buffer = (char*) realloc(buffer, bufSize);
@@ -135,8 +134,10 @@ Sockets::userRequest Sockets::get_client_request(int client_fd){
 	//TO-DO: find out why there is empty space at the end of the request
 	cout << "Processing request" << endl;
     userRequest clientRequest;
-    char *request = NULL;
-	int bytes_read = read_message(client_fd, &request, REQUESTBUFSIZE);
+    char *request = (char *)malloc(REQUESTBUFSIZE);
+	int bytes_read = read(client_fd, request, REQUESTBUFSIZE);
+    if (bytes_read < 0)
+        error("ERROR reading from client\n");
     clientRequest.bytes_read = bytes_read;
     clientRequest.request = request;
     clientRequest.hostname = gethostname(request);
@@ -169,10 +170,11 @@ Sockets::serverResponse Sockets::process_request(userRequest request) {
     write_message(sockfd, request.request, request.bytes_read, 1);
     char *response = NULL;
     int response_size = read_message(sockfd, &response, RESPONSEBUFSIZE);
-    close(sockfd); //TODO: hash connections
+    //close(sockfd); //TODO: hash connections
 
-    serverResponse resp = {response_size, response};
-
+    serverResponse resp;
+    resp.bytes_read = response_size;
+    resp.data = response;
     return resp;
 }
 
