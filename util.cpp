@@ -1,4 +1,3 @@
-
 #include "util.h"
 
 char *make_superstr(int na, int nb, char *sa, char *sb) {
@@ -46,17 +45,11 @@ char *get_substr(char *paragraph, char *begkey, char *endkey, int remove) {
 		if (!end)
 			return NULL;
 	}
-
-	//fprintf(stdout, "Allocating %d bytes for '%s'\n", substr_size, begkey);
-
-	//fprintf(stdout, "\n---\nENdkey Length: %ld, Substr Length: %ld\n", strlen(endkey), end-beg);
 	char *buffer = malloc(substr_size + 1);
 	if (!buffer)
 		error("Could not allocate memory");
 	memset(buffer, 0, substr_size);
 	memcpy(buffer, beg + remove, substr_size);
 	buffer[substr_size] = '\0';
-	
-	//fprintf(stdout, "Ret: %s, size: %ld\n", buffer, strlen(buffer));
 	return buffer;
 }

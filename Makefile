@@ -1,17 +1,15 @@
-
-CXX      = clang++
-CXXFLAGS = -Wall -Wextra -std=c++11
+CXX = clang++
+CXXFLAGS = -g3 -Wall -Wextra -std=c++11
 LDFLAGS  = -g3
 
-# the build target executable:
-TARGET = proxy
-DEPS = bandwidth.cpp #cache.cpp 
 
-all: $(TARGET)
+all: proxy testcache
 
-$(TARGET): $(TARGET).o $(DEPS)
-	$(CXX) $(LDFLAGS) $(DEPS) -o $(TARGET) $(TARGET).cpp
+testcache:  testcache.o cache.o
+	    $(CXX) $(LDFLAGS) $^ -o $@
 
-clean: 
-	#rm $(TARGET)
-	rm *.o
+proxy:  proxy.o cache.o sockets.o
+	$(CXX) $(LDFLAGS) $^ -o $@
+
+clean:
+	rm -f testcache proxy *.o

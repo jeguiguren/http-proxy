@@ -1,118 +1,243 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 #include "cache.h"
-#include "util.h" 
-#include <time.h>
+using namespace std;
 
-#define CACHE_SIZE 10
-#define DEFAULT_MAX_AGE 3600 // 1 hr
+/***************************
+	Function: constructor
+	Puroprse: creates instance of this class
+******************************/
+Cache::Cache(){
+}
 
+/***************************
+	Function: destructor
+	Puroprse: deletes all memoer used on the heap
+******************************/
+Cache::~Cache(){
+}
 
+/***************************
+	Function: cacheElement
+	Puroprse: adds an element to the cache
+******************************/
+void Cache::cacheElement(string name, string userRequest, 
+										  string data, string hostKey, int TTL){
+	Event event = Event::CND;
+	int timeStored = time(NULL);
+	int lastAccesed = timeStored;
+	dataCache[name] = dataCacheNode{name, userRequest, data, hostKey, 
+					       					   timeStored, TTL, lastAccesed, 1};
+	logEvent(event, name);
+	if (dataCache.size() >= MAXDATACACHESIZE)
+		removeOldData();
+}
 
-cache new_cache() {
-	cache c = malloc(sizeof(struct cache));
-	if (!c)
-		error("Could not Initialize Cache");
-	for (int i = 0; i < CACHE_SIZE; i++) {
-		c->contents[i] = NULL;
+/***************************
+	Function: cacheConnection
+	Puroprse: adds a new open TCP connection to the connection cache
+******************************/
+void Cache::cacheConnection(string key, int sockfd){
+	//Test to see if this, especially the serveradd, works perfectly
+	Event event = Event::CNC;
+	tcpConnections[key] = tcpConnectionsNode{key, sockfd};
+	logEvent(event, key);
+}
+
+/******************************
+	Function: existsInCahe
+	Purpose: checks if the key exists in the specified cache
+*******************************/
+bool Cache::existsInCahe(string key, bool data){
+	if (data){
+		try{
+			dataCache.at(key);
+		}catch(...){
+			return false;
+		}
+		return true;
+	}else{
+		try{
+			tcpConnections.at(key);
+		}catch(...){
+			return false;
+		}
+		return true;
 	}
-	return c;
 }
 
-int get_max_age(char *message) {
-	char *key = "max-age=";
-	char *max_age = get_substr(message, key, "\r\n", strlen(key));
-	if (!max_age)
-		return DEFAULT_MAX_AGE;
-	//fprintf(stdout, "%s\n", max_age);
-	return atoi(max_age);
+/******************************
+	Function: dataInCache
+	Purpose: seraches for the specified element in the cache
+*******************************/
+bool Cache::dataInCache(string name){
+	return existsInCahe(name, true);
 }
 
-
-content message_to_content(int port, char *request, char *response, int size) {
-	content cont = malloc(sizeof(struct content));
-	cont->birth = (int) time(0);
-	cont->max_age = get_max_age(response);
-	cont->accesed = cont->birth;
-	cont->size = size;
-	cont->port = port;
-	cont->request = request;
-	cont->response = response;
-	//fprintf(stdout,"Storing message with life %d, and birth %d\n", cont->max_age, cont->birth);
-	return cont;
+/******************************
+	Function: availableConnection
+	Parameters: key: key of the connection to be searched for
+	Returns: true if the connection exists and false otherwise
+	Purpose: seraches for the specified connection in the cache
+*******************************/
+bool Cache::availableConnection(string key){
+	return existsInCahe(key, false);
 }
 
-
-int is_stale(content cont) {
-	if (cont) {
-		int age = ((int) time(0)) - cont->birth;
-		return age > cont->max_age;
-	}
-	return 1;
+/******************************
+	Function: getDataFromCache
+	Purpose: returns the data of the element associated with name in the cache
+*******************************/
+string Cache::getDataFromCache(string name){
+	Event event = Event::RD;
+	dataCacheNode element = dataCache.at(name);
+	string data = element.data;
+	dataCache.erase(name);
+	//TO-DO: increase hitrate by 1
+	cacheElement(name, element.userRequest, data, element.hostKey, element.TTL);
+	logEvent(event, name);
+	return data;
 }
 
+/******************************
+	Function: getDataFromCache
+	Purpose: get an open tcp connection associated with the key if it exists
+*******************************/
+int Cache::getTcpConnection(string key){
+	Event event = Event::RC;
+	logEvent(event, key);
+	return tcpConnections.at(key).sockfd;
+}
 
-content find_content(cache a_cache, int port, char *request) {
-	content cont = NULL;
-	for (int i = 0; i < CACHE_SIZE; i ++) {
-		cont = a_cache->contents[i];
-		if (!is_stale(cont)) {
-			if (!strcmp(request, cont->request) && port == cont->port) {
-				//fprintf(stdout, "Resource FOUND! %s in %d\n", request, i);
-				return cont;
-			}
+/******************************
+	Function: removeOldData
+	Purpose: removes data that has not been accessed in a while from the cache
+*******************************/
+void Cache::removeOldData(){
+	Event event = Event::DD;
+	int currentTime = time(NULL);
+	for (auto x: dataCache){
+		if (currentTime - x.second.lastAccessed >= OLDTIME){
+			dataCache.erase(x.first);
+			logEvent(event, x.first);
 		}
 	}
-	return NULL;
 }
 
 
-int cache_fetch(cache a_cache, int port, char *request, char **response)
-{
-	//fprintf(stdout, "Looking for %s\n", request);
-	content cont = find_content(a_cache, port, request);
-	if (!cont)
-		return -1;
-	cont->accesed = (int) time(0);
-	int age = (int) time(0) - cont->birth;
-	char sage[15];
-	sprintf(sage, "Age: %d\r\n", age);
-
-	//fprintf(stdout, "%d\n", age);
-	//fprintf(stdout, "%ld\n", strlen(sage));
-	char *res = make_superstr(strlen(sage), cont->size, sage, cont->response);
-	*response = res;
-	return cont->size + strlen(sage);
-}
-
-
-int find_spot(cache a_cache) {
-	int oldest = 0;
-	for (int i = 0; i < CACHE_SIZE; i ++) {
-		content cont = a_cache->contents[i];
-		if (!cont) //Empty
-			return i;
-		if (is_stale(cont))
-			return i;
-		if (cont->accesed < a_cache->contents[oldest]->accesed) //least recently accesed
-			oldest = i;
+ofstream openFile(){
+	ofstream outfile;
+	outfile.open(FILENAME, std::ofstream::out | std::ofstream::app);
+	if (!outfile.is_open())
+	{
+		throw runtime_error("Failed to open cachelog.txt");
 	}
-	return oldest;
+	return outfile;
 }
 
+string getTime(){
+	string currentTime;
+	time_t rawtime;
+  	struct tm * timeinfo;
+ 	time(&rawtime);
+  	timeinfo = localtime(&rawtime);
+  	currentTime =  asctime(timeinfo);
+  	return currentTime;
+}
 
-void cache_store(cache a_cache, int port, char *request, char *response, int size)
-{
-	content cont = message_to_content(port, request, response, size);
-	int spot = find_spot(a_cache);
-	if (a_cache->contents[spot]) {
-		free(a_cache->contents[spot]->request);
-		free(a_cache->contents[spot]->response);
-		free(a_cache->contents[spot]);
+/******************************
+	Function: logEvent
+	Purpose: logs a cache event in cachelog.txt
+*******************************/
+void Cache::logEvent(Event event, string cacheElement){
+	string currentTime = getTime();
+	string toWrite;
+	ofstream outfile;
+	try{
+		outfile = openFile();
+	}catch(...){
+		return;
 	}
-	a_cache->contents[spot] = cont; 
-	//fprintf(stdout, "\n\nResource Cached in %d: %s\n", spot, cont->request);
+	switch (event){
+		case Event::CND :
+				toWrite = cacheElement + "was added to the data cache.";
+				break;
+		case Event::DD :
+				toWrite = cacheElement + "was deleted from the data cache.";
+				break;
+		case Event::RD :
+				toWrite = cacheElement + "was gotten from the data cache.";
+				break;
+		case Event::UD :
+				toWrite = cacheElement + "was updated in the data cache.";
+				break;
+		case Event::FUD :
+				toWrite = "Failed to update "+ cacheElement + 
+				          "in the data cache.";
+				break;
+		case Event::CNC :
+				toWrite = cacheElement + "connection was added to" + 
+				                         " the connection cache.";
+			    break;
+		case Event::RC :
+				toWrite = cacheElement + "connection was deleted from" + 
+				                         " the connection cache.";
+			    break;
+		default: return; 
+	}
+	toWrite = currentTime.substr(0, currentTime.length() - 1) + " : " + toWrite;
+	outfile << "________________________________________" <<
+	           "________________________________________" << endl;
+	outfile << toWrite << endl;
+	outfile.close();
 }
 
+struct datapriority{
+	double priority;
+	string datakey;
+};
 
+bool operator <(const datapriority& first, const datapriority& second){
+	return first.priority < second.priority;
+}
+
+double Cache::getPriority(dataCacheNode data){
+	//TO-DO: this is in seconds maybe cahnge it to minutes
+	int currentTime = time(NULL);
+	int timeIncache = currentTime - data.timeStored;
+	return  ((data.hitRate / timeIncache) * (1 / data.data.length()));
+}
+
+void Cache::updateElement(string key){
+	dataCacheNode data = dataCache.at(key);
+	string request = data.userRequest;
+	//char charRequest[request.length() + 1];
+	//strcpy(charRequest, request.c_str());
+	//int connection = tcpConnections.at(data.hostKey).sockfd;
+	//TO-DO: complete this when you figure out SSL
+}
+
+/******************************
+	Function: upDatecache 
+	Returns: updates stale data in the cache
+*******************************/
+void Cache::upDatecache(){
+	double priority;
+	Event event = Event::UD;
+	Event event2 = Event::FUD;
+	int currentTime = time(NULL), count = 0;
+	priority_queue<datapriority, vector<datapriority>, less<datapriority>> pq;
+	for (auto x: dataCache){
+		if ((currentTime - x.second.timeStored) >= (x.second.TTL - LEEWAY)){
+			priority = getPriority(x.second);
+			pq.push(datapriority{priority, x.second.name});
+		}
+	}
+	while (!(pq.empty()) && count < 10){
+		try{
+			updateElement(pq.top().datakey);
+			logEvent(event, pq.top().datakey);
+		}catch(...){
+			logEvent(event2, pq.top().datakey);
+		}
+		count++;
+	}
+}
