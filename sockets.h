@@ -99,6 +99,6 @@ public:
 private:
 	int myPort;
 	static const int REQUESTBUFSIZE = 5000;
-	static const int RESPONSEBUFSIZE = 20000;
+	static const int RESPONSEBUFSIZE = 16384;
 };
 #endif

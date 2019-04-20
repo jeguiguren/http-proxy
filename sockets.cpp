@@ -240,17 +240,21 @@ Sockets::serverResponse Sockets::process_request(userRequest request) {
 
 /*******************************************************************************
     Function: respond
-    Puroprse: reads from Server and writes to client; TODO must cache it
+    Puroprse: reads from Server and writes to client in chunks of at least RESPONSEBUFSIZE (except last chunk)
+    Returns: returns true if done transferring data
+    TODO must cache it
 *******************************************************************************/
 int Sockets::respond(int serverSock, int clientSock){
     char *message = NULL;
     int received = read_message(serverSock, &message, RESPONSEBUFSIZE);
-    cout << "Read message of size " << received << endl;
-    //int size = read_message(serverSock, &message, RESPONSEBUFSIZE);
-    int size = write_message(clientSock, message, received);
-    cout << "Wrote " << size << " from " << serverSock << " to " << clientSock << endl;
-    free(message);
-    return 0;
+    if (received > 0) {
+        cout << "Read message of size " << received << endl;
+        //int size = read_message(serverSock, &message, RESPONSEBUFSIZE);
+        int size = write_message(clientSock, message, received);
+        cout << "Wrote " << size << " from " << serverSock << " to " << clientSock << endl;
+    }
+    free(message);        
+    return received < RESPONSEBUFSIZE;
 }
 
 
