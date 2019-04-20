@@ -49,6 +49,16 @@ int read_message(int sockfd, char **message, int scale) {
 }
 
 
+void Sockets::free_request(userRequest *req) {
+    if (req != NULL) {
+        if (req->request != NULL)
+            free(req->request);
+        if (req->hostname != NULL)
+            free(req->hostname);
+        free(req);
+    }
+}
+
 /*******************************************************************************
     Function: constructor
     Puroprse: creates instance of this class
@@ -189,6 +199,9 @@ int Sockets::connect_and_write_to_server(userRequest request) {
     cout << "Connected to server" << endl;
     write_message(sockfd, request.request, request.bytes_read);
     cout << "Wrote to server" << endl;
+
+    serverReq.insert(make_pair(sockfd, request));
+
     return sockfd;
 }
 
@@ -253,8 +266,36 @@ int Sockets::respond(int serverSock, int clientSock){
         int size = write_message(clientSock, message, received);
         cout << "Wrote " << size << " from " << serverSock << " to " << clientSock << endl;
     }
-    free(message);        
-    return received < RESPONSEBUFSIZE;
+
+    serverResponse response { received, message };
+    serverRespIter = serverResp.find(serverSock);
+
+    // First read
+    if (serverRespIter == serverResp.end()) {
+        serverResp.insert(make_pair(serverSock, response)); 
+    } 
+    //Subsequent reads
+    else { 
+        response = serverRespIter->second;
+        char *merged = (char *)realloc(response.data, response.bytes_read + received);
+        memcpy(merged + response.bytes_read, message, received);
+        response.bytes_read += received;
+        response.data = merged;
+        serverRespIter->second = response;
+        free(message);
+    }
+    if (received < RESPONSEBUFSIZE) {
+        serverReqIter = serverReq.find(serverSock);
+        if (serverReqIter == serverReq.end()) {
+            cout << "this should not happen\n";
+        } else {
+            userRequest request = serverReqIter->second; 
+            (void) request;
+            cout << "Caching request of size " << request.bytes_read <<  " with response of size " << response.bytes_read << "; cache handles request parsing for GET object?\n";
+        }
+        return 1;
+    }    
+    return 0;
 }
 
 

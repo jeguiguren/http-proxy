@@ -49,6 +49,8 @@ int main(int argc, char **argv){
             	cout << "Socket ready " << sock_fd << endl;
                 try{
                 	//New client request
+                	// TODO: add socket function to see if cahed; else, proceed
+                	
                 	iter = serverClient.find(sock_fd);
                 	if (iter == serverClient.end()) {
                 		cout << "New client request\n";

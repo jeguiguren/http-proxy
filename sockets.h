@@ -13,6 +13,7 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <unordered_map> 
 
 using namespace std;
 
@@ -98,6 +99,13 @@ public:
 	int respond(int serverSock, int clientSock);
 private:
 	int myPort;
+	unordered_map<int, userRequest> serverReq; //maps server sockets to Request
+	unordered_map<int, userRequest>::iterator serverReqIter;
+	
+	unordered_map<int, serverResponse> serverResp; //maps server sockets to Responses (partial or complete)
+	unordered_map<int, serverResponse>::iterator serverRespIter;
+
+	void free_request(userRequest *req);
 	static const int REQUESTBUFSIZE = 5000;
 	static const int RESPONSEBUFSIZE = 16384;
 };
