@@ -22,11 +22,11 @@ public:
 
 	/***************************
 		Function: constructor
-		Parameters: none
+		Parameters: port where master socket is running
 		Returns: Nothing
 		Puroprse: creates instance of this class
 	******************************/
-	Sockets();
+	Sockets(int port);
 
 	/***************************
 		Function: destructor
@@ -47,8 +47,6 @@ public:
 		int bytes_read;
 		char *data;
 	};
-
-	void error(string msg);
 
 	/***************************************************************************
 		Function: create_proxy_address
@@ -84,30 +82,26 @@ public:
 	int connect_to_server(int portno, string host_address);
 
 	/***************************************************************************
-		Function: writeandread
-		Parameters: sockfd: server file descriptor
-					request: request made to sever
+		Function: process_request
+		Parameters: request: request made to sever
 		Returns: data read from server
 		Puroprse: writes a request to a server and return the server's response
 	***************************************************************************/
-	serverResponse writeandread(int sockfd, userRequest request);
-
-
-
 	serverResponse process_request(userRequest request);
 
 	/***************************************************************************
-		Function: writetoclient
+		Function: respond
 		Parameters: sockfd: client file descriptor
 					response: response from server
 		Returns: nothing
 		Puroprse: writes a response to the server
 	***************************************************************************/
-	void writetoclient(int sockfd, serverResponse response);
+	void respond(int sockfd, serverResponse response);
 private:
-
-	static const int REQUESTBUFSIZE = 512;
-	static const int RESPONSEBUFSIZE = 1024;
+	int myPort;
+	unordered_map<int, int> serverClient;
+	static const int REQUESTBUFSIZE = 5000;
+	static const int RESPONSEBUFSIZE = 500000;
 
 };
 #endif

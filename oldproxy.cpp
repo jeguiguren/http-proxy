@@ -174,7 +174,6 @@ int main(int argc, char *argv[])
 #include "cache.h"
 #include "sockets.h"
 #include "util.h"
-#import <thread> 
 
 int main(int argc, char **argv){
 
@@ -215,13 +214,12 @@ int main(int argc, char **argv){
                 cout << "socket: " << sock_fd << endl;
                 try{
                     clientRequest = session.get_client_request(sock_fd);
-                    server_fd = session.connect_to_server(clientRequest.portno,
-                                                          clientRequest.hostname);
+                    //server_fd = session.connect_to_server(clientRequest.portno,
+                    //                                      clientRequest.hostname);
                     //response = session.writeandread(server_fd, 
                     //                                      clientRequest);
                     
-
-                    response = session.process_request(clientRequest); //returns server's socket
+                    response = session.process_request(clientRequest);
                     session.respond(sock_fd, response);
                 }catch(const std::exception &exc){
                 	cerr << exc.what();
