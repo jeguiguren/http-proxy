@@ -73,13 +73,12 @@ public:
 	userRequest get_client_request(int client_fd);
 
 	/***************************************************************************
-		Function: connect_to_server
-		Parameters: portno: portno server is on
-					host_address: server address
+		Function: connect_and_write_to_server
+		Parameters: request: client's request as struct
 		Returns: sockfd associated with the server
-		Puroprse: connects to the server
+		Puroprse: connects to the server and writes request to server
 	***************************************************************************/
-	int connect_to_server(int portno, string host_address);
+	int connect_and_write_to_server(userRequest request);
 
 	/***************************************************************************
 		Function: process_request
@@ -96,12 +95,10 @@ public:
 		Returns: nothing
 		Puroprse: writes a response to the server
 	***************************************************************************/
-	void respond(int sockfd, serverResponse response);
+	int respond(int serverSock, int clientSock);
 private:
 	int myPort;
-	unordered_map<int, int> serverClient;
 	static const int REQUESTBUFSIZE = 5000;
-	static const int RESPONSEBUFSIZE = 500000;
-
+	static const int RESPONSEBUFSIZE = 20000;
 };
 #endif

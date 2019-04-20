@@ -174,14 +174,19 @@ int main(int argc, char *argv[])
 #include "cache.h"
 #include "sockets.h"
 #include "util.h"
+#include <unordered_map> 
 #import <thread> 
 
 int main(int argc, char **argv){
 
+	unordered_map<int, int> serverClient;
+	unordered_map<int, int>::iterator iter;
+
+	int client_sock, server_sock;
 	int myPort = atoi(argv[1]);
     Sockets session(myPort);
     Sockets::userRequest clientRequest;
-    Sockets::serverResponse response;
+    //Sockets::serverResponse response;
     fd_set master_fd_set, copy_fd_set;
     int listen_sock, max_fd, new_sock_fd;
     if (argc != 2) {
@@ -201,37 +206,53 @@ int main(int argc, char **argv){
         }
           //TO-DO: call update cache here
         for (int sock_fd = 0; sock_fd < max_fd + 1; sock_fd++){
-          if (FD_ISSET (sock_fd, &copy_fd_set)){
-            if (sock_fd == listen_sock){
-                new_sock_fd = session.accept_new_connection(listen_sock);
-                if (new_sock_fd > 0){
-                    FD_SET(new_sock_fd, &master_fd_set);
-                    if (new_sock_fd > max_fd)
-                        max_fd = new_sock_fd;
-                }else{
-                    error("ERROR on accept");
-                }
+        	if (FD_ISSET (sock_fd, &copy_fd_set)){
+            	if (sock_fd == listen_sock){
+                	new_sock_fd = session.accept_new_connection(listen_sock);
+                	if (new_sock_fd > 0){
+                    	FD_SET(new_sock_fd, &master_fd_set);
+                    	if (new_sock_fd > max_fd)
+                        	max_fd = new_sock_fd;
+                    cout << "New client on socket " << new_sock_fd << endl;
+                	}else{
+                    	error("ERROR on accept");
+                	}
             }else{
-                cout << "socket: " << sock_fd << endl;
+            	cout << "Socket ready " << sock_fd << endl;
                 try{
-                    clientRequest = session.get_client_request(sock_fd);
-                    server_fd = session.connect_to_server(clientRequest.portno,
-                                                          clientRequest.hostname);
-                    //response = session.writeandread(server_fd, 
-                    //                                      clientRequest);
+                	//New client request
+                	iter = serverClient.find(sock_fd);
+                	if (iter == serverClient.end()) {
+                		cout << "New client request\n";
+                    	clientRequest = session.get_client_request(sock_fd);
+                    	new_sock_fd = session.connect_and_write_to_server(clientRequest);
+                    	//Write to server connect_and_write
+                    	serverClient.insert(make_pair(new_sock_fd, sock_fd)); 
+                    	FD_SET(new_sock_fd, &master_fd_set); 
+                    	if (new_sock_fd > max_fd)
+                        	max_fd = new_sock_fd;
+                            cout << "New server on socket " << new_sock_fd << endl;
+                	} 
+                	// Server socket ready to write
+                	else {
+                		cout << "Server ready to write\n";
+                		server_sock = iter->first;
+                		client_sock = iter->second;
+                		if (session.respond(server_sock, client_sock)) { //returns 1 if response completed
+                			cout << "Closing client and server connections\n";
+			                close (client_sock);
+			                FD_CLR (client_sock, &master_fd_set);
+			                close (server_sock);
+			                FD_CLR (server_sock, &master_fd_set);
+                		}
+                	}
                     
-
-                    response = session.process_request(clientRequest); //returns server's socket
-                    session.respond(sock_fd, response);
                 }catch(const std::exception &exc){
                 	cerr << exc.what();
                     cout << "Closed connection: " << sock_fd <<endl;
                     close (sock_fd);
                     FD_CLR (sock_fd, &master_fd_set);
                 }
-                cout << "Closed connection: " << sock_fd <<endl;
-                close (sock_fd);
-                FD_CLR (sock_fd, &master_fd_set);
             }
           }
         }

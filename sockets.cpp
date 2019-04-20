@@ -20,10 +20,11 @@ int write_message(int sockfd, char *message, int messageSize) {
     cout << "Writing message of size " << messageSize << endl;
     int n = write(sockfd, message, messageSize);
     if (n < 0)
-        throw runtime_error("ERROR writing to server");
-    cout << "done\n";
+        throw runtime_error("Error on write");
+    //cout << "done\n";
     return n;
 }
+
 
 int read_message(int sockfd, char **message, int scale) {
     cout << "reading\n";
@@ -32,6 +33,10 @@ int read_message(int sockfd, char **message, int scale) {
     int bufSize = scale;
     while ((n = read(sockfd, (void *)(buffer + received), scale)) > 0) {
         received += n;
+        if (received >= scale){
+            *message = buffer;
+            return received;
+        }
         bufSize += scale;
         buffer = (char*) realloc(buffer, bufSize);
     }
@@ -39,9 +44,10 @@ int read_message(int sockfd, char **message, int scale) {
     if (n < 0) 
         throw runtime_error("ERROR reading from socket");
     *message = buffer;
-    cout << "Read message of size " << received << endl;
+    //cout << "Read message of size " << received << endl;
     return received;
 }
+
 
 /*******************************************************************************
     Function: constructor
@@ -96,7 +102,7 @@ int Sockets::accept_new_connection(int listen_sock){
     clientlen = sizeof(clientaddr);
     int sock_fd = accept(listen_sock, (struct sockaddr *) &clientaddr, 
                                                         (socklen_t*)&clientlen);
-    cout << "Accepted connection to: " << sock_fd << endl;
+    //cout << "Accepted connection to: " << sock_fd << endl;
     return sock_fd;
 }
 
@@ -138,7 +144,7 @@ Sockets::userRequest Sockets::get_client_request(int client_fd){
     char *request = (char *)malloc(REQUESTBUFSIZE);
     int bytes_read = read(client_fd, request, REQUESTBUFSIZE);
     cout << "Request of size: " << bytes_read << endl;
-    if (bytes_read < 0)
+    if (bytes_read <= 0)
         throw runtime_error("ERROR reading from client\n");
     clientRequest.bytes_read = bytes_read;
     clientRequest.request = request;
@@ -151,6 +157,41 @@ Sockets::userRequest Sockets::get_client_request(int client_fd){
 
     return clientRequest;
 }
+
+
+/*******************************************************************************
+    Function: connect_and_write_to_server
+    Puroprse: connects and writes to the server
+*******************************************************************************/
+int Sockets::connect_and_write_to_server(userRequest request) {
+    //TO-DO: Figure out how to change the parameter to a pointer
+    int sockfd;
+    string host_name = request.hostname;
+    char hostname[host_name.length() + 1];
+    strcpy(hostname, host_name.c_str());
+    struct sockaddr_in serveraddr;
+    struct hostent *server;
+    sockfd = socket(AF_INET, SOCK_STREAM, 0);
+    if (sockfd < 0) 
+        throw runtime_error("ERROR opening socket");
+    server = gethostbyname(hostname);
+    if (server == NULL) {
+        throw runtime_error("ERROR, no such host");
+        exit(0);
+    }
+    bzero((char *) &serveraddr, sizeof(serveraddr));
+    serveraddr.sin_family = AF_INET;
+    bcopy((char *)server->h_addr, 
+                         (char *)&serveraddr.sin_addr.s_addr, server->h_length);
+    serveraddr.sin_port = htons(request.portno);
+    if (connect(sockfd, (struct sockaddr *) &serveraddr, sizeof(serveraddr)) <0) 
+        throw runtime_error("ERROR connecting to server");
+    cout << "Connected to server" << endl;
+    write_message(sockfd, request.request, request.bytes_read);
+    cout << "Wrote to server" << endl;
+    return sockfd;
+}
+
 
 /*******************************************************************************
     Function: process_request
@@ -198,12 +239,18 @@ Sockets::serverResponse Sockets::process_request(userRequest request) {
 
 
 /*******************************************************************************
-    Function: writetoclient
-    Puroprse: writes a response to the server
+    Function: respond
+    Puroprse: reads from Server and writes to client; TODO must cache it
 *******************************************************************************/
-void Sockets::respond(int sockfd,  serverResponse response){
-    int n = write_message(sockfd, response.data, response.bytes_read);
-    cout << "Wrote to client " << n << endl;
+int Sockets::respond(int serverSock, int clientSock){
+    char *message = NULL;
+    int received = read_message(serverSock, &message, RESPONSEBUFSIZE);
+    cout << "Read message of size " << received << endl;
+    //int size = read_message(serverSock, &message, RESPONSEBUFSIZE);
+    int size = write_message(clientSock, message, received);
+    cout << "Wrote " << size << " from " << serverSock << " to " << clientSock << endl;
+    free(message);
+    return 0;
 }
 
 
