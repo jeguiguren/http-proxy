@@ -5,16 +5,18 @@
 #include <unordered_map> 
 #import <thread> 
 
+//Treat https clients as servers
+
 int main(int argc, char **argv){
 
-	unordered_map<int, int> serverClient;
+	unordered_map<int, int> senderReceiver;
 	unordered_map<int, int>::iterator iter;
 
-	int client_sock, server_sock;
+	int sender_sock, receiver_sock;
 	int myPort = atoi(argv[1]);
     Sockets session(myPort);
-    Sockets::userRequest clientRequest;
-    //Sockets::serverResponse response;
+    int isHttps = 0;
+    
     fd_set master_fd_set, copy_fd_set;
     int listen_sock, max_fd, new_sock_fd;
     if (argc != 2) {
@@ -32,7 +34,7 @@ int main(int argc, char **argv){
         if (select (max_fd + 1, &copy_fd_set, NULL, NULL, NULL) < 0){
           	error("ERROR on select");
         }
-          //TO-DO: call update cache here
+        //TO-DO: call update cache here?
         for (int sock_fd = 0; sock_fd < max_fd + 1; sock_fd++){
         	if (FD_ISSET (sock_fd, &copy_fd_set)){
             	if (sock_fd == listen_sock){
@@ -49,31 +51,36 @@ int main(int argc, char **argv){
             	cout << "Socket ready " << sock_fd << endl;
                 try{
                 	//New client request
-                	// TODO: add socket function to see if cahed; else, proceed
+                	// TODO: add socket function to see if cached; else, proceed
                 	
-                	iter = serverClient.find(sock_fd);
-                	if (iter == serverClient.end()) {
+                	iter = senderReceiver.find(sock_fd);
+                	if (iter == senderReceiver.end()) {
                 		cout << "New client request\n";
-                    	clientRequest = session.get_client_request(sock_fd);
-                    	new_sock_fd = session.connect_and_write_to_server(clientRequest);
-                    	//Write to server connect_and_write
-                    	serverClient.insert(make_pair(new_sock_fd, sock_fd)); 
-                    	FD_SET(new_sock_fd, &master_fd_set); 
-                    	if (new_sock_fd > max_fd)
-                        	max_fd = new_sock_fd;
-                            cout << "New server on socket " << new_sock_fd << endl;
+
+                        //Returns newly oppened server socket
+                        new_sock_fd = session.process_request(sock_fd, &isHttps); 
+                        senderReceiver.insert(make_pair(new_sock_fd, sock_fd)); 
+                        FD_SET(new_sock_fd, &master_fd_set); 
+                        if (new_sock_fd > max_fd)
+                            max_fd = new_sock_fd;
+                        cout << "New server on socket " << new_sock_fd << endl;
+
+                        if (isHttps)
+                            senderReceiver.insert(make_pair(sock_fd, new_sock_fd));
                 	} 
                 	// Server socket ready to write
                 	else {
-                		cout << "Server ready to write\n";
-                		server_sock = iter->first;
-                		client_sock = iter->second;
-                		if (session.respond(server_sock, client_sock)) { // returns true if transfer completed
+                		cout << "New Transfer\n";
+                		sender_sock = iter->first;
+                		receiver_sock = iter->second;
+                		if (session.transfer(sender_sock, receiver_sock) == 0) { // Transfer completed
                 			cout << "Closing client and server connections\n";
-			                close (client_sock);
-			                FD_CLR (client_sock, &master_fd_set);
-			                close (server_sock);
-			                FD_CLR (server_sock, &master_fd_set);
+			                close (sender_sock);
+			                FD_CLR (sender_sock, &master_fd_set);
+                            senderReceiver.erase(sender_sock);
+			                close (receiver_sock);
+			                FD_CLR (receiver_sock, &master_fd_set);
+                            senderReceiver.erase(receiver_sock);
                 		}
                 	}
                     

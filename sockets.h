@@ -39,9 +39,10 @@ public:
 
 	struct userRequest{
 		char *request;
-		char *hostname;
+		string hostname;
 		int portno;
 		int bytes_read;
+		int isHttps;
 	};
 
 	struct serverResponse{
@@ -66,6 +67,36 @@ public:
 	int accept_new_connection(int listen_sock);
 
 	/***************************************************************************
+		Function: process_request
+		Parameters: socket to read from and flag to set if request is https
+		Returns: newly opened server socket
+		Purpose: Reads from client and opens server socket; sets flag accordingly
+	***************************************************************************/
+	int process_request(int client_fd, int *isHttps);
+
+	/***************************************************************************
+		Function: transfer
+		Parameters: sockfd: client file descriptor
+					response: response from server
+		Returns: num bytes transfered (0 if transfer done)
+		Purpose: read from server and write to client (caches if http)
+	***************************************************************************/
+	int transfer(int serverSock, int clientSock);
+
+
+private:
+	int myPort;
+	unordered_map<int, userRequest> serverReq; //maps server sockets to Request
+	unordered_map<int, userRequest>::iterator serverReqIter;
+
+	unordered_map<int, int> httpsPairs; // double mapping of https-connected devices
+	unordered_map<int, int>::iterator httpsPairsIter;
+	
+	unordered_map<int, serverResponse> serverResp; //maps server sockets to Responses (partial or complete)
+	unordered_map<int, serverResponse>::iterator serverRespIter;
+
+
+	/***************************************************************************
 		Function: get_client_request
 		Parameters: file descriptor to the socket data is to be read from
 		Returns: the data (request) sent from a client
@@ -74,39 +105,17 @@ public:
 	userRequest get_client_request(int client_fd);
 
 	/***************************************************************************
-		Function: connect_and_write_to_server
+		Function: connect_to_server
 		Parameters: request: client's request as struct
 		Returns: sockfd associated with the server
-		Puroprse: connects to the server and writes request to server
+		Puroprse: opens up new socket for server
 	***************************************************************************/
-	int connect_and_write_to_server(userRequest request);
+	int connect_to_server(userRequest request);
 
-	/***************************************************************************
-		Function: process_request
-		Parameters: request: request made to sever
-		Returns: data read from server
-		Puroprse: writes a request to a server and return the server's response
-	***************************************************************************/
-	serverResponse process_request(userRequest request);
 
-	/***************************************************************************
-		Function: respond
-		Parameters: sockfd: client file descriptor
-					response: response from server
-		Returns: nothing
-		Puroprse: writes a response to the server
-	***************************************************************************/
-	int respond(int serverSock, int clientSock);
-private:
-	int myPort;
-	unordered_map<int, userRequest> serverReq; //maps server sockets to Request
-	unordered_map<int, userRequest>::iterator serverReqIter;
-	
-	unordered_map<int, serverResponse> serverResp; //maps server sockets to Responses (partial or complete)
-	unordered_map<int, serverResponse>::iterator serverRespIter;
 
 	void free_request(userRequest *req);
-	static const int REQUESTBUFSIZE = 5000;
-	static const int RESPONSEBUFSIZE = 16384;
+	static const int REQUESTBUFSIZE = 4096;
+	static const int RESPONSEBUFSIZE = 4096;
 };
 #endif
