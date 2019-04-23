@@ -3,22 +3,12 @@ using namespace std;
 
 
 /*
-For select:
-Jorge requests google (select identifies Jorge); open up socket
-with Google, and return the socket to main loop (and add it to slect)
-When Google is ready to write, select will identify it;
-Keep a list or dict where socket can index into "receiver" so that when google
-writes we know what client to send it to
-
-
-For HTTPS:
-Read for "Connect" key word in header, and then
-open up a tunnel between them
 */
 
 int write_message(int sockfd, char *message, int messageSize) {
 	cout << "Writing\n";
-	int n = write(sockfd, message, messageSize);
+
+	int n = send(sockfd, message, messageSize, MSG_NOSIGNAL);
 	if (n < 0)
 		throw runtime_error("Error on write");
 	//cout << "done\n";
@@ -39,6 +29,8 @@ void Sockets::free_request(userRequest *req) {
 	if (req != NULL) {
 		if (req->request != NULL)
 			free(req->request);
+		if (req->hostname != NULL)
+			free(req->hostname);
 		free(req);
 	}
 }
@@ -70,7 +62,7 @@ int Sockets::create_proxy_address(int portno){
 	if (listen_sock < 0) 
 		throw runtime_error("ERROR opening socket");
 	optval = 1;
-	setsockopt(listen_sock, SOL_SOCKET, SO_REUSEADDR, 
+	setsockopt(listen_sock, SOL_SOCKET, SO_REUSEADDR,  
 										   (const void *)&optval , sizeof(int));
 	bzero((char *) &serveraddr, sizeof(serveraddr));
 	serveraddr.sin_family = AF_INET;
@@ -96,7 +88,7 @@ int Sockets::accept_new_connection(int listen_sock){
 	clientlen = sizeof(clientaddr);
 	int sock_fd = accept(listen_sock, (struct sockaddr *) &clientaddr, 
 														(socklen_t*)&clientlen);
-	//cout << "Accepted connection to: " << sock_fd << endl;
+	cout << "Accepted connection to: " << sock_fd << endl;
 	return sock_fd;
 }
 
@@ -110,25 +102,27 @@ int getportno(char *request){
 		portno = atoi(strchr(holder, ':') + 1);
 	if (portno == 0)
 		portno = 80;
-	cout << portno << endl;
 	return portno;
 }
 
-string get_host_and_port(char *request, int *port){
-	request = strstr(request, "Host: ") + 6; 
-	char *end =  strstr(request, "\r\n");
-	string host(request, end - request);
-	string sport = "80";
-	int len = host.length();
-	for (int i = 0; i < len; i++) {
-		if (host[i] == ':') {
-			sport = host.substr(i + 1, len - 1);
-			host = host.substr(0, i);
-		}
+char *gethostname(char *request){
+	//size_t start = str.find("Host:"); 
+
+    //if (found != string::npos) 
+
+	char *holder;
+	int i = 0;
+	cout << "before malloc\n";
+	char *hostname = (char* )malloc(100);
+	cout << "after malloc\n";
+	holder = strstr(request, "Host:") + 6;
+	while (holder[i] != ':' && holder[i] != '\r'){
+		hostname[i] = holder[i];
+		i++;
 	}
-	(*port) = stoi(sport);
-	cout << host << ", " << sport << endl; 
-	return host;
+	hostname[i] = '\0';
+	cout << "host " << hostname << endl;
+	return hostname;
 }
 
 int isHttps(string req) {
@@ -147,17 +141,21 @@ Sockets::userRequest Sockets::get_client_request(int client_fd){
 	userRequest clientRequest;
 	char *request = NULL;
 	int bytes_read = read_message(client_fd, &request, REQUESTBUFSIZE);
-	
-	cout << request;
-	clientRequest.bytes_read = bytes_read;
-	clientRequest.request = request;
-	clientRequest.hostname = get_host_and_port(request, &clientRequest.portno);
-	clientRequest.isHttps = isHttps(request);
-	if ((clientRequest.hostname == "localhost") and 
-		clientRequest.portno == myPort)
-		throw runtime_error("I am only a proxy");
 
-	cout << "request" << endl;
+	if (bytes_read > 0){
+		cout << request;
+		clientRequest.bytes_read = bytes_read;
+		clientRequest.request = request;
+		clientRequest.hostname = gethostname(request);
+		clientRequest.portno = getportno(request);
+		clientRequest.isHttps = isHttps(request);
+		if ((strcmp(clientRequest.hostname, "localhost") == 0) and 
+			clientRequest.portno == myPort)
+			throw runtime_error("I am only a proxy");
+	}
+	else {
+		throw runtime_error("Empty request");
+	}
 	return clientRequest;
 }
 
@@ -168,6 +166,7 @@ Sockets::userRequest Sockets::get_client_request(int client_fd){
 *******************************************************************************/
 int Sockets::connect_to_server(userRequest request) {
 	//TO-DO: Figure out how to change the parameter to a pointer
+	cout << "in connect\n";
 	int sockfd;
 	string host_name = request.hostname;
 	char hostname[host_name.length() + 1];
@@ -175,27 +174,34 @@ int Sockets::connect_to_server(userRequest request) {
 
 	struct sockaddr_in serveraddr;
 	struct hostent *server;
-
-	cout << "a\n";
 	
 	sockfd = socket(AF_INET, SOCK_STREAM, 0);
 	if (sockfd < 0) 
 		throw runtime_error("ERROR opening socket");
-	
+
+	long arg = fcntl(sockfd, F_GETFL, NULL); 
+  	arg |= O_NONBLOCK; 
+  	fcntl(sockfd, F_SETFL, arg); 
+
 	server = gethostbyname(hostname);
 	if (server == NULL) 
 		throw runtime_error("ERROR, no such host");
-	cout << "b\n";
 		
 	bzero((char *) &serveraddr, sizeof(serveraddr));
 	serveraddr.sin_family = AF_INET;
 	bcopy((char *)server->h_addr, 
 						 (char *)&serveraddr.sin_addr.s_addr, server->h_length);
 	serveraddr.sin_port = htons(request.portno);
-	cout << "c\n";
+
 	if (connect(sockfd, (struct sockaddr *) &serveraddr, sizeof(serveraddr)) < 0) {
-		cout << "d\n";
-		throw runtime_error("ERROR connecting to server");
+		fd_set fdset;
+	    struct timeval tv;
+		FD_ZERO(&fdset);
+	    FD_SET(sockfd, &fdset);
+	    tv.tv_sec = 1;             /* 1 second timeout */
+	    tv.tv_usec = 0;
+	    if (select(sockfd + 1, NULL, &fdset, NULL, &tv) <= 0)
+	    	throw runtime_error("ERROR connecting to server");
 	}
 	cout << "Connected to server" << endl;
 	return sockfd;
@@ -214,7 +220,14 @@ int Sockets::process_request(int client_fd, int *isHttps) {
 	cout << "Processing request\n";
 
 	userRequest request = get_client_request(client_fd);
-	int server_fd = connect_to_server(request);
+	int server_fd;
+	try{        
+		server_fd = connect_to_server(request);
+	}catch(const std::exception &exc){
+		free_request(&request);
+		throw runtime_error("ERROR connecting to server");
+	}
+                
 
 	if (request.isHttps) {
 		cout << "Received HTTPS request" << endl;
@@ -248,7 +261,7 @@ int Sockets::transfer(int serverSock, int clientSock){
 	char *message = NULL;
 	int received = read_message(serverSock, &message, RESPONSEBUFSIZE);
 
-	httpsPairsIter = httpsPairs.find(clientSock);
+	httpsPairsIter = httpsPairs.find(serverSock);
 	serverRespIter = serverResp.find(serverSock);
 		
 	// Transfer in progress
@@ -276,10 +289,11 @@ int Sockets::transfer(int serverSock, int clientSock){
 				serverRespIter->second = response;
 			}
 		}
+		cout << "outs\n";
 	}
 	//Transfer done
 	else {
-		if (httpsPairsIter == httpsPairs.end()) { // HTTP transfer, Need to cache complete
+		if (httpsPairsIter == httpsPairs.end() and serverRespIter != serverResp.end()) { // HTTP transfer, Need to cache complete
 			cout << "Caching complete transfer\n";
 			serverResponse response = serverRespIter->second;
 			serverReqIter = serverReq.find(clientSock);
@@ -293,7 +307,8 @@ int Sockets::transfer(int serverSock, int clientSock){
 			httpsPairs.erase(serverSock);
 		}
 	}
-	free(message);
+	if (message != NULL)
+		free(message);
 	return received;
 }
 

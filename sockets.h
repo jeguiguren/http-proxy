@@ -14,8 +14,10 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <unordered_map> 
+#include <fcntl.h>
 
 using namespace std;
+#define MSG_NOSIGNAL 0x2000 /* don't raise SIGPIPE */
 
 
 class Sockets{
@@ -39,7 +41,7 @@ public:
 
 	struct userRequest{
 		char *request;
-		string hostname;
+		char *hostname;
 		int portno;
 		int bytes_read;
 		int isHttps;
