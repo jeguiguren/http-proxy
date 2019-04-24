@@ -106,10 +106,6 @@ int getportno(char *request){
 }
 
 char *gethostname(char *request){
-	//size_t start = str.find("Host:"); 
-
-    //if (found != string::npos) 
-
 	char *holder;
 	int i = 0;
 	cout << "before malloc\n";
@@ -125,10 +121,55 @@ char *gethostname(char *request){
 	return hostname;
 }
 
-int isHttps(string req) {
+char  *getObjectname(char *request, int portnum){
+    char *name = (char* )malloc(1000);
+    int bytesUsed = 1000;
+    char *holder;
+    char intString[6];
+    int i = 0, j = 0;
+    holder = strstr(request, "GET ") + 4;
+    while(holder[i] != ' '){
+        name[i] = holder[i];
+        i++;
+        if (i == (bytesUsed - 1)){
+        	name = (char* )realloc(name, bytesUsed + 1000);
+        	bytesUsed += 1000;
+        }
+    }
+    name[i] = ':';
+    i++;
+    sprintf(intString,"%d",portnum);
+    while(intString[j] != '\0'){
+        name[i] = intString[j];
+        i++;
+        j++;
+    }
+    name[i] = '\0';
+    return name;
+}
 
+int isHttps(string req) {
 	size_t index = req.find("CONNECT");
 	return index != string::npos;
+}
+
+int getTimeToLive(char *response){
+    char *holder;
+    int timeToLive = 0;
+    holder = strstr(response, "max-age=");
+    if (holder != NULL){
+        if((holder + 8)[0] == '0'){
+            //timeToLive = 0;
+            return 0;
+        }
+        timeToLive = atoi(holder + 8);
+    }
+    if((timeToLive == 0) || (holder == NULL)){
+    	//TO-DO: change this to have to deal with minutes
+        timeToLive = 3600;
+    }
+    return timeToLive;
+
 }
 
 
@@ -299,7 +340,10 @@ int Sockets::transfer(int serverSock, int clientSock){
 			serverReqIter = serverReq.find(clientSock);
 			userRequest request = serverReqIter->second; 
 			(void) request;
+			char * requestName = getObjectname(request.request, request.portno);
+			int TTL = getTimeToLive(response.data);
 			cout << "Caching request of size " << request.bytes_read <<  " with response of size " << response.bytes_read << "; cache handles request parsing for GET object?\n";
+			sessionCache.cacheElement(requestName, request.request, response.data, TTL, response.bytes_read);
 		}
 		else {
 			cout << "Removing https b/c complete transfer\n";

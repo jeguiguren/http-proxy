@@ -1,6 +1,7 @@
 #ifndef SOCKETS_H_
 #define SOCKETS_H_
 
+#include "cache.h"
 #include <netdb.h>
 #include <cstdlib>
 #include <stdlib.h>
@@ -84,7 +85,7 @@ public:
 		Purpose: read from server and write to client (caches if http)
 	***************************************************************************/
 	int transfer(int serverSock, int clientSock);
-
+	Cache sessionCache;
 
 private:
 	int myPort;

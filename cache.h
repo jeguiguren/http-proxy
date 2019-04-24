@@ -53,8 +53,7 @@ public:
 		Puroprse: adds the server response to the cache if it doesn't exist or
 				  updates it if it already exists
 	******************************/
-	void cacheElement(string name, string userRequest, 
-										  string data, string hostKey, int TTL);
+	void cacheElement(char *name, char *userRequest, char *data, int TTL, int dataLength);
 
 
 	/***************************
@@ -74,7 +73,7 @@ public:
 		Returns: true if the element exists and false otherwise
 		Purpose: seraches for the specified element in the cache
 	*******************************/
-	bool dataInCache(string name);
+	bool dataInCache(char *name);
 
 	/******************************
 		Function: availableConnection
@@ -90,7 +89,7 @@ public:
 		Returns: data associated with HTTP/HTTPS request (name)
 		Purpose: get an element from the cache
 	*******************************/
-	string getDataFromCache(string name);
+	char* getDataFromCache(char *name);
 
 	/******************************
 		Function: getDataFromCache
@@ -111,14 +110,14 @@ private:
 	enum class Event { CND, DD, RD, UD, FUD, CNC, RC };
 	//typedef struct sockaddr_in sockaddr_in;
 	struct dataCacheNode {
-		string name;
-		string userRequest;
-		string data;
-		string hostKey;
+		char *name;
+		char *userRequest;
+		char *data;
 		int timeStored;
 		int TTL;
-		int lastAccessed;
-		int hitRate;
+		int *lastAccessed;
+		int *hitRate;
+		int dataLength;
 	}; 
 
 	struct tcpConnectionsNode{

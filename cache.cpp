@@ -19,14 +19,17 @@ Cache::~Cache(){
 	Function: cacheElement
 	Puroprse: adds an element to the cache
 ******************************/
-void Cache::cacheElement(string name, string userRequest, 
-										  string data, string hostKey, int TTL){
+void Cache::cacheElement(char *name, char *userRequest, char *data, int TTL, int dataLength){
+	string key = name;
+	cout << "Caching :" << key << endl;
 	Event event = Event::CND;
 	int timeStored = time(NULL);
-	int lastAccesed = timeStored;
-	dataCache[name] = dataCacheNode{name, userRequest, data, hostKey, 
-					       					   timeStored, TTL, lastAccesed, 1};
-	logEvent(event, name);
+	int *lastAccesed = new int;
+	*lastAccesed = timeStored;
+	int *one = new int;
+	*one = 1;
+	dataCache[key] = dataCacheNode{name, userRequest, data, timeStored, TTL, lastAccesed, one, dataLength};
+	logEvent(event, key);
 	if (dataCache.size() >= MAXDATACACHESIZE)
 		removeOldData();
 }
@@ -35,12 +38,12 @@ void Cache::cacheElement(string name, string userRequest,
 	Function: cacheConnection
 	Puroprse: adds a new open TCP connection to the connection cache
 ******************************/
-void Cache::cacheConnection(string key, int sockfd){
-	//Test to see if this, especially the serveradd, works perfectly
-	Event event = Event::CNC;
-	tcpConnections[key] = tcpConnectionsNode{key, sockfd};
-	logEvent(event, key);
-}
+// void Cache::cacheConnection(string key, int sockfd){
+// 	//Test to see if this, especially the serveradd, works perfectly
+// 	Event event = Event::CNC;
+// 	tcpConnections[key] = tcpConnectionsNode{key, sockfd};
+// 	logEvent(event, key);
+// }
 
 /******************************
 	Function: existsInCahe
@@ -68,32 +71,37 @@ bool Cache::existsInCahe(string key, bool data){
 	Function: dataInCache
 	Purpose: seraches for the specified element in the cache
 *******************************/
-bool Cache::dataInCache(string name){
+bool Cache::dataInCache(char *name){
+	string key = name;
+	cout << "Checking if: " << key << "exists in the cache" << endl;
 	return existsInCahe(name, true);
 }
 
-/******************************
-	Function: availableConnection
-	Parameters: key: key of the connection to be searched for
-	Returns: true if the connection exists and false otherwise
-	Purpose: seraches for the specified connection in the cache
-*******************************/
-bool Cache::availableConnection(string key){
-	return existsInCahe(key, false);
-}
+// *****************************
+// 	Function: availableConnection
+// 	Parameters: key: key of the connection to be searched for
+// 	Returns: true if the connection exists and false otherwise
+// 	Purpose: seraches for the specified connection in the cache
+// ******************************
+// bool Cache::availableConnection(string key){
+// 	return existsInCahe(key, false);
+// }
 
 /******************************
 	Function: getDataFromCache
 	Purpose: returns the data of the element associated with name in the cache
 *******************************/
-string Cache::getDataFromCache(string name){
+char* Cache::getDataFromCache(char *name){
+	string key = name;
+	cout << "Trying to get: " << key << "from the cache" << endl;
 	Event event = Event::RD;
-	dataCacheNode element = dataCache.at(name);
-	string data = element.data;
-	dataCache.erase(name);
-	//TO-DO: increase hitrate by 1
-	cacheElement(name, element.userRequest, data, element.hostKey, element.TTL);
-	logEvent(event, name);
+	dataCacheNode element = dataCache.at(key);
+	char *data = element.data;
+	*(element.hitRate) = *(element.hitRate) + 1;
+	// dataCache.erase(name);
+	// //TO-DO: increase hitrate by 1
+	// cacheElement(name, element.userRequest, data, element.hostKey, element.TTL);
+	logEvent(event, key);
 	return data;
 }
 
@@ -101,11 +109,11 @@ string Cache::getDataFromCache(string name){
 	Function: getDataFromCache
 	Purpose: get an open tcp connection associated with the key if it exists
 *******************************/
-int Cache::getTcpConnection(string key){
-	Event event = Event::RC;
-	logEvent(event, key);
-	return tcpConnections.at(key).sockfd;
-}
+// int Cache::getTcpConnection(string key){
+// 	Event event = Event::RC;
+// 	logEvent(event, key);
+// 	return tcpConnections.at(key).sockfd;
+// }
 
 /******************************
 	Function: removeOldData
@@ -115,7 +123,7 @@ void Cache::removeOldData(){
 	Event event = Event::DD;
 	int currentTime = time(NULL);
 	for (auto x: dataCache){
-		if (currentTime - x.second.lastAccessed >= OLDTIME){
+		if (currentTime - *(x.second.lastAccessed) >= OLDTIME){
 			dataCache.erase(x.first);
 			logEvent(event, x.first);
 		}
@@ -158,27 +166,27 @@ void Cache::logEvent(Event event, string cacheElement){
 	}
 	switch (event){
 		case Event::CND :
-				toWrite = cacheElement + "was added to the data cache.";
+				toWrite = cacheElement + " was added to the data cache.";
 				break;
 		case Event::DD :
-				toWrite = cacheElement + "was deleted from the data cache.";
+				toWrite = cacheElement + " was deleted from the data cache.";
 				break;
 		case Event::RD :
-				toWrite = cacheElement + "was gotten from the data cache.";
+				toWrite = cacheElement + " was gotten from the data cache.";
 				break;
 		case Event::UD :
-				toWrite = cacheElement + "was updated in the data cache.";
+				toWrite = cacheElement + " was updated in the data cache.";
 				break;
 		case Event::FUD :
 				toWrite = "Failed to update "+ cacheElement + 
-				          "in the data cache.";
+				          " in the data cache.";
 				break;
 		case Event::CNC :
-				toWrite = cacheElement + "connection was added to" + 
+				toWrite = cacheElement + " connection was added to" + 
 				                         " the connection cache.";
 			    break;
 		case Event::RC :
-				toWrite = cacheElement + "connection was deleted from" + 
+				toWrite = cacheElement + " connection was deleted from" + 
 				                         " the connection cache.";
 			    break;
 		default: return; 
@@ -203,7 +211,7 @@ double Cache::getPriority(dataCacheNode data){
 	//TO-DO: this is in seconds maybe cahnge it to minutes
 	int currentTime = time(NULL);
 	int timeIncache = currentTime - data.timeStored;
-	return  ((data.hitRate / timeIncache) * (1 / data.data.length()));
+	return  ((*(data.hitRate) / timeIncache) * (1 / data.dataLength));
 }
 
 void Cache::updateElement(string key){
