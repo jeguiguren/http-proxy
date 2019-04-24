@@ -23,6 +23,7 @@ int main(int argc, char **argv){
       fprintf(stderr, "usage: %s <port>\n", argv[0]);
       exit(1);
     }
+    signal(SIGPIPE, SIG_IGN);
     listen_sock = session.create_proxy_address(myPort);
     max_fd = listen_sock;
     FD_ZERO (&master_fd_set);
