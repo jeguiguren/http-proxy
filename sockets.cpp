@@ -7,11 +7,9 @@ using namespace std;
 
 int write_message(int sockfd, char *message, int messageSize) {
 	cout << "Writing\n";
-
 	int n = send(sockfd, message, messageSize, MSG_NOSIGNAL);
 	if (n < 0)
 		throw runtime_error("Error on write");
-	//cout << "done\n";
 	return n;
 }
 
@@ -31,7 +29,6 @@ void Sockets::free_request(userRequest *req) {
 			free(req->request);
 		if (req->hostname != NULL)
 			free(req->hostname);
-		free(req);
 	}
 }
 
@@ -260,6 +257,7 @@ int Sockets::transfer(int serverSock, int clientSock){
 
 	char *message = NULL;
 	int received = read_message(serverSock, &message, RESPONSEBUFSIZE);
+	int erase = 1;
 
 	httpsPairsIter = httpsPairs.find(serverSock);
 	serverRespIter = serverResp.find(serverSock);
@@ -274,10 +272,9 @@ int Sockets::transfer(int serverSock, int clientSock){
 			cout << "\n***** Store to later cache ********\n";
 			// First read
 			if (serverRespIter == serverResp.end()) {
-				char *merged = (char *) malloc(received);
-				memcpy(merged, message, received);
-				serverResponse response { received, merged };
+				serverResponse response { received, message };
 				serverResp.insert(make_pair(serverSock, response)); 
+				erase = 0;
 			} 
 			//Subsequent reads
 			else { 
@@ -289,7 +286,6 @@ int Sockets::transfer(int serverSock, int clientSock){
 				serverRespIter->second = response;
 			}
 		}
-		cout << "outs\n";
 	}
 	//Transfer done
 	else {
@@ -300,6 +296,8 @@ int Sockets::transfer(int serverSock, int clientSock){
 			userRequest request = serverReqIter->second; 
 			(void) request;
 			cout << "Caching request of size " << request.bytes_read <<  " with response of size " << response.bytes_read << "; cache handles request parsing for GET object?\n";
+			// After caching, one can free + remove request from serverReq
+			//Keep Server Resp because cache only caches pointer
 		}
 		else {
 			cout << "Removing https b/c complete transfer\n";
@@ -307,7 +305,7 @@ int Sockets::transfer(int serverSock, int clientSock){
 			httpsPairs.erase(serverSock);
 		}
 	}
-	if (message != NULL)
+	if (message != NULL and erase)
 		free(message);
 	return received;
 }
