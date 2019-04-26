@@ -97,7 +97,7 @@ private:
 	  considered obselete*/
 	static const int LEEWAY = 10;
 	static const int OLDTIME = 7200;
-	static const int MAXDATACACHESIZE = 3;
+	static const int MAXDATACACHESIZE = 50;
 
 	/******************************
 		Function: removeOldData
