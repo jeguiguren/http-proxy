@@ -1,4 +1,22 @@
 ________________________________________________________________________________
-Tue Apr 23 23:48:07 2019 : http://www.cs.cmu.edu/~prs/bio.html:80 was added to the data cache.
+Fri Apr 26 14:31:10 2019 : http://www.cs.cmu.edu/~prs/bio.html:80 was added to the data cache.
 ________________________________________________________________________________
-Tue Apr 23 23:48:07 2019 : http://www.cs.cmu.edu/~prs/bio.html:80 was added to the data cache.
+Fri Apr 26 14:31:22 2019 : http://www.cs.tufts.edu/util.js:80 was added to the data cache.
+________________________________________________________________________________
+Fri Apr 26 14:33:25 2019 : http://www.cs.tufts.edu/util.js:80 was gotten from the data cache.
+________________________________________________________________________________
+Fri Apr 26 14:33:30 2019 : http://www.cs.tufts.edu/comp/112/index.html:80 was added to the data cache.
+________________________________________________________________________________
+Fri Apr 26 14:33:30 2019 : http://www.cs.tufts.edu/util.js:80 was gotten from the data cache.
+________________________________________________________________________________
+Fri Apr 26 14:33:44 2019 : http://www.cs.tufts.edu/comp/112/index.html:80 was gotten from the data cache.
+________________________________________________________________________________
+Fri Apr 26 14:33:44 2019 : http://www.cs.tufts.edu/util.js:80 was gotten from the data cache.
+________________________________________________________________________________
+Fri Apr 26 14:34:06 2019 : http://www.cs.cmu.edu/~dga/dga-headshot.jpg:80 was added to the data cache.
+________________________________________________________________________________
+Fri Apr 26 14:34:09 2019 : http://www.cs.cmu.edu/~dga/dga-headshot.jpg:80 was gotten from the data cache.
+________________________________________________________________________________
+Fri Apr 26 14:34:22 2019 : http://www.cs.cmu.edu/~dga/dga-headshot.jpg:80 was gotten from the data cache.
+________________________________________________________________________________
+Fri Apr 26 15:26:40 2019 : http://ocsp.sectigo.com/MFcwVaADAgEAME4wTDBKMAkGBSsOAwIaBQAEFEML0g5PE3oabJGPJOXafjJNRzPIBBSNjF7EVK2K4Xfpm%2FmbBeG4AY1h4QIRAMafM6XWiwebhSEBhi3cfLE%3D:80 was added to the data cache.

@@ -41,6 +41,11 @@ public:
 	******************************/
 	~Cache();
 
+	struct cacheResponse{
+		char *data;
+		int data_length;
+	};
+
 	/***************************
 		Function: cacheElement
 		Parameters: name: key of the element to be cached
@@ -55,33 +60,14 @@ public:
 	******************************/
 	void cacheElement(char *name, char *userRequest, char *data, int TTL, int dataLength);
 
-
-	/***************************
-		Function: cacheConnection
-		Parameters: key: key of the element to be cached (hostname concatenated 
-						 with port number)
-					sockfd: file descriptor for a connection
-		Returns: Nothing
-		Puroprse: adds a new open TCP connection to the connection cache
-	******************************/
-	//void cacheConnection(string key, int sockfd, sockaddr_in serveradd);
-	void cacheConnection(string key, int sockfd);
-
 	/******************************
 		Function: dataInCache
 		Parameters: name: key of the element to be searched for
 		Returns: true if the element exists and false otherwise
-		Purpose: seraches for the specified element in the cache
+		Purpose: searches for the specified element in the cache
 	*******************************/
 	bool dataInCache(char *name);
 
-	/******************************
-		Function: availableConnection
-		Parameters: key: key of the connection to be searched for
-		Returns: true if the connection exists and false otherwise
-		Purpose: seraches for the specified connection in the cache
-	*******************************/
-	bool availableConnection(string key);
 
 	/******************************
 		Function: getDataFromCache
@@ -89,25 +75,10 @@ public:
 		Returns: data associated with HTTP/HTTPS request (name)
 		Purpose: get an element from the cache
 	*******************************/
-	char* getDataFromCache(char *name);
-
-	/******************************
-		Function: getDataFromCache
-		Parameters: name: key of the connection to be returned
-		Returns: file descriptor of the connection
-		Purpose: get an open tcp connection associated with the key if it exists
-	*******************************/
-	int getTcpConnection(string key);
-
-	/******************************
-		Function: upDatecache
-		Parameters: 
-		Returns: updates stale data in the cache
-	*******************************/
-	void upDatecache();
+	cacheResponse getDataFromCache(char *name);
 
 private:
-	enum class Event { CND, DD, RD, UD, FUD, CNC, RC };
+	enum class Event { CND, DD, RD};
 	//typedef struct sockaddr_in sockaddr_in;
 	struct dataCacheNode {
 		char *name;
@@ -120,19 +91,13 @@ private:
 		int dataLength;
 	}; 
 
-	struct tcpConnectionsNode{
-		string key;
-		int sockfd;
-	};
-
 	unordered_map<string, dataCacheNode> dataCache;
-	unordered_map<string, tcpConnectionsNode> tcpConnections;
 
 	/*data in the cache that has not been accessed in time >= OLDTIME is 
 	  considered obselete*/
 	static const int LEEWAY = 10;
 	static const int OLDTIME = 7200;
-	static const int MAXDATACACHESIZE = 50;
+	static const int MAXDATACACHESIZE = 3;
 
 	/******************************
 		Function: removeOldData
@@ -143,15 +108,6 @@ private:
 	void removeOldData();
 
 	/******************************
-		Function: existsInCahe
-		Parameters: key: key to be searched for
-					data: true if we are seraching the datacache, false otherwise
-		Returns: bool
-		Purpose: checks if the key exists in the specified cache
-	*******************************/
-	bool existsInCahe(string key, bool data);
-
-	/******************************
 		Function: logEvent
 		Parameters: event: event to be logged
 					cacheElement: element event happened to
@@ -159,8 +115,7 @@ private:
 		Purpose: logs a cache event in cachelog.txt
 	*******************************/
 	void logEvent(Event event, string cacheElement);
-
+	bool stale(string key);
 	double getPriority(dataCacheNode data);
-	void updateElement(string key);
 };
 #endif

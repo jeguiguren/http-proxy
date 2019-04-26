@@ -99,6 +99,7 @@ int getportno(char *request){
 		portno = atoi(strchr(holder, ':') + 1);
 	if (portno == 0)
 		portno = 80;
+	cout << portno << endl;
 	return portno;
 }
 
@@ -118,7 +119,7 @@ char *gethostname(char *request){
 	return hostname;
 }
 
-char  *getObjectname(char *request, int portnum){
+char* Sockets::getObjectname(char *request, int portnum){
     char *name = (char* )malloc(1000);
     int bytesUsed = 1000;
     char *holder;
@@ -187,6 +188,7 @@ Sockets::userRequest Sockets::get_client_request(int client_fd){
 		clientRequest.hostname = gethostname(request);
 		clientRequest.portno = getportno(request);
 		clientRequest.isHttps = isHttps(request);
+		cout << "got request info" << endl;
 		if ((strcmp(clientRequest.hostname, "localhost") == 0) and 
 			clientRequest.portno == myPort)
 			throw runtime_error("I am only a proxy");
@@ -258,6 +260,15 @@ int Sockets::process_request(int client_fd, int *isHttps) {
 	cout << "Processing request\n";
 
 	userRequest request = get_client_request(client_fd);
+	if (!request.isHttps){
+		char * requestName = getObjectname(request.request, request.portno);
+		if (sessionCache.dataInCache(requestName)){
+			Cache::cacheResponse response = sessionCache.getDataFromCache(requestName);
+			write_message(client_fd, response.data, response.data_length);
+			throw runtime_error("Wrote from cache");
+		}
+	}
+
 	int server_fd;
 	try{        
 		server_fd = connect_to_server(request);
@@ -338,8 +349,10 @@ int Sockets::transfer(int serverSock, int clientSock){
 			(void) request;
 			char * requestName = getObjectname(request.request, request.portno);
 			int TTL = getTimeToLive(response.data);
-			cout << "Caching request of size " << request.bytes_read <<  " with response of size " << response.bytes_read << "; cache handles request parsing for GET object?\n";
-			sessionCache.cacheElement(requestName, request.request, response.data, TTL, response.bytes_read);
+			if (TTL > 0){
+				cout << "Caching request of size " << request.bytes_read <<  " with response of size " << response.bytes_read << "; cache handles request parsing for GET object?\n";
+				sessionCache.cacheElement(requestName, request.request, response.data, TTL, response.bytes_read);
+			}
 		}
 		else {
 			cout << "Removing https b/c complete transfer\n";

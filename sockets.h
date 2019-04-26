@@ -85,10 +85,12 @@ public:
 		Purpose: read from server and write to client (caches if http)
 	***************************************************************************/
 	int transfer(int serverSock, int clientSock);
-	Cache sessionCache;
+
+	char* getObjectname(char *request, int portnum);
 
 private:
 	int myPort;
+	Cache sessionCache;
 	unordered_map<int, userRequest> serverReq; //maps server sockets to Request
 	unordered_map<int, userRequest>::iterator serverReqIter;
 
