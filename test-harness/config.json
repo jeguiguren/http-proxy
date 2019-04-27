@@ -1,0 +1,13 @@
+{
+  "proxyIp": "localhost",
+  "proxyPort": 9050,
+  "urls": [
+    "https://www.google.com",
+    "https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Retry-After",
+    "http://www.cs.cmu.edu/~dga/dga-headshot.jpg"
+  ],
+  "numClients": 10,
+  "reqsPerClient": 10,
+  "iterations": 10,
+  "numRequests": 500
+}
