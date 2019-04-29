@@ -19,6 +19,8 @@ int main(int argc, char **argv){
 	int sender_sock, receiver_sock;
 	int myPort = atoi(argv[1]);
     int maxBPS = atoi(argv[2]) * 1000;
+    if (maxBPS == 0)
+        maxBPS = 100000000;
     
     Sockets session(myPort, maxBPS);
     int isHttps = 0;
@@ -34,11 +36,11 @@ int main(int argc, char **argv){
     while(1){
         FD_ZERO (&copy_fd_set);
         memcpy(&copy_fd_set, &master_fd_set, sizeof(master_fd_set));
-        cout << "Waiting.............................." << endl;
+        //cout << "Waiting.............................." << endl;
         if (select (max_fd + 1, &copy_fd_set, NULL, NULL, NULL) < 0){
           	error("ERROR on select");
         }
-        cout << "GOT PASSED SELECT" << endl;
+        //cout << "GOT PASSED SELECT" << endl;
         //TO-DO: call update cache here?
         for (int sock_fd = 0; sock_fd < max_fd + 1; sock_fd++){
         	if (FD_ISSET (sock_fd, &copy_fd_set)){
@@ -53,14 +55,14 @@ int main(int argc, char **argv){
                     	error("ERROR on accept");
                 	}
             }else{
-            	cout << "Socket ready " << sock_fd << endl;
+            	//cout << "Socket ready " << sock_fd << endl;
                 try{
                 	//New client request
                 	// TODO: add socket function to see if cached; else, proceed
                 	
                 	iter = senderReceiver.find(sock_fd);
                 	if (iter == senderReceiver.end()) {
-                		cout << "New client request\n";
+                		cout << "New client request from " << sock_fd << endl;
 
                         //Returns newly oppened server socket
                         new_sock_fd = session.process_request(sock_fd, &isHttps); 
@@ -75,7 +77,7 @@ int main(int argc, char **argv){
                 	} 
                 	// Server socket ready to write
                 	else {
-                		cout << "New Transfer\n";
+                		//cout << "New Transfer\n";
                 		sender_sock = iter->first;
                 		receiver_sock = iter->second;
                 		if (session.transfer(sender_sock, receiver_sock) == 0) { // Transfer completed

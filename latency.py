@@ -7,7 +7,7 @@ import time
 
 
 port = sys.argv[1]
-proxy = "comp112-02.cs.tufts.edu" # CHANGE THIS AS NECESSARY
+proxy = "localhost" # CHANGE THIS AS NECESSARY
 url0 = "http://portquiz.net:8080/" # Small web transfer - 50 bytes
 url1 = "https://www.hq.nasa.gov/alsj/a17/A17_FlightPlan.pdf" # Large web transfer - 20 MB
 url2 = "www.cs.tufts.edu/comp/160/"

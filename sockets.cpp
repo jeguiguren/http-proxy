@@ -6,17 +6,17 @@ using namespace std;
 */
 
 int write_message(int sockfd, char *message, int messageSize) {
-	cout << "Writing\n";
+	//cout << "Writing\n";
 	int n = send(sockfd, message, messageSize, MSG_NOSIGNAL);
 	if (n < 0){
-		cout << "The error was error " << n << endl;
+		//cout << "The error was error " << n << endl;
 		throw runtime_error("Error on write");
 	}
 	return n;
 }
 
 int read_message(int sockfd, char **message, int scale) {
-	cout << "reading\n";
+	//cout << "reading\n";
 	char *buffer = (char*) malloc(scale);
 	int received = read(sockfd, (void *)buffer, scale);
 	if (received < 0) 
@@ -74,7 +74,7 @@ int Sockets::create_proxy_address(int portno){
 		throw runtime_error("ERROR on binding");
 	if (listen(listen_sock, 10) < 0)
 		throw runtime_error("ERROR on listen");
-	cout << "Created the proxy" << endl;
+	//cout << "Created the proxy" << endl;
 	return listen_sock;
 }
 
@@ -88,7 +88,7 @@ int Sockets::accept_new_connection(int listen_sock){
 	clientlen = sizeof(clientaddr);
 	int sock_fd = accept(listen_sock, (struct sockaddr *) &clientaddr, 
 														(socklen_t*)&clientlen);
-	cout << "Accepted connection to: " << sock_fd << endl;
+	//cout << "Accepted connection to: " << sock_fd << endl;
 	return sock_fd;
 }
 
@@ -106,7 +106,7 @@ int getportno(char *request, int isConnect){
 		portno = atoi(strchr(holder, ':') + 1);
 	if (portno == 0)
 		portno = 80;
-	cout << portno << endl;
+	//cout << portno << endl;
 	return portno;
 }
 
@@ -124,32 +124,24 @@ char *gethostname(char *request, int isConnect){
 		i++;
 	}
 	hostname[i] = '\0';
-	cout << "host " << hostname << endl;
+	//cout << "host " << hostname << endl;
 	return hostname;
 }
 
 char* Sockets::getObjectname(char *request, int portnum){
-    char *name = (char* )malloc(1000);
-    int bytesUsed = 1000;
+    char *name = (char* )malloc(100);
+    int bytesUsed = 100;
     char *holder;
     char intString[6];
-    int i = 0, j = 0;
+    int i = 0;
     holder = strstr(request, "GET ") + 4;
     while(holder[i] != ' '){
         name[i] = holder[i];
         i++;
         if (i == (bytesUsed - 1)){
-        	name = (char* )realloc(name, bytesUsed + 1000);
-        	bytesUsed += 1000;
+        	name = (char* )realloc(name, bytesUsed + 100);
+        	bytesUsed += 100;
         }
-    }
-    name[i] = ':';
-    i++;
-    sprintf(intString,"%d",portnum);
-    while(intString[j] != '\0'){
-        name[i] = intString[j];
-        i++;
-        j++;
     }
     name[i] = '\0';
     return name;
@@ -191,7 +183,6 @@ Sockets::userRequest Sockets::get_client_request(int client_fd){
 	int bytes_read = read_message(client_fd, &request, REQUESTBUFSIZE);
 
 	if (bytes_read > 0){
-		cout << request;
 		clientRequest.bytes_read = bytes_read;
 		clientRequest.request = request;
 		clientRequest.isHttps = isHttps(request);
@@ -202,7 +193,7 @@ Sockets::userRequest Sockets::get_client_request(int client_fd){
 			throw runtime_error("I am only a proxy");
 	}
 	else {
-		throw runtime_error("Empty request");
+		throw runtime_error("Empty request\n");
 	}
 	return clientRequest;
 }
@@ -213,8 +204,7 @@ Sockets::userRequest Sockets::get_client_request(int client_fd){
 	Puroprse: connects and writes to the server
 *******************************************************************************/
 int Sockets::connect_to_server(userRequest request) {
-	//TO-DO: Figure out how to change the parameter to a pointer
-	cout << "in connect\n";
+	//cout << "in connect\n";
 	int sockfd;
 	string host_name = request.hostname;
 	char hostname[host_name.length() + 1];
@@ -251,7 +241,7 @@ int Sockets::connect_to_server(userRequest request) {
 	    if (select(sockfd + 1, NULL, &fdset, NULL, &tv) <= 0)
 	    	throw runtime_error("ERROR connecting to server");
 	}
-	cout << "Connected to server" << endl;
+	//cout << "Connected to server" << endl;
 	return sockfd;
 }
 
@@ -265,12 +255,12 @@ int Sockets::connect_to_server(userRequest request) {
 ***************************************************************************/
 int Sockets::process_request(int client_fd, int *isHttps) {
 
-	cout << "Processing request\n";
-
 	userRequest request = get_client_request(client_fd);
 	if (!request.isHttps){
 		char * requestName = getObjectname(request.request, request.portno);
+		cout << "Req Name: " << requestName << endl;
 		if (sessionCache.dataInCache(requestName)){
+			cout << "\n*** writing from cache ***\n";
 			Cache::cacheResponse response = sessionCache.getDataFromCache(requestName);
 			write_message(client_fd, response.data, response.data_length);
 			throw runtime_error("Wrote from cache");
@@ -287,7 +277,6 @@ int Sockets::process_request(int client_fd, int *isHttps) {
                 
 
 	if (request.isHttps) {
-		cout << "Received HTTPS request" << endl;
 		httpsPairs.insert(make_pair(client_fd, server_fd)); 
 		httpsPairs.insert(make_pair(server_fd, client_fd)); 
 		char *ok200 = (char *)"HTTP/1.0 200 Connection established\r\n\r\n";
@@ -296,10 +285,9 @@ int Sockets::process_request(int client_fd, int *isHttps) {
 		free_request(&request);
 	}
 	else {
-		cout << "Received HTTP request" << endl;
+		cout << "adding server req\n";
 		write_message(server_fd, request.request, request.bytes_read);
-		cout << "Wrote to server" << endl;
-		serverReq.insert(make_pair(client_fd, request));
+		serverReq.insert(make_pair(server_fd, request));
 		(*isHttps) = 0;
 	}
 	return server_fd;
@@ -318,15 +306,10 @@ int Sockets::bandwidth_exceeded(int clientSock) {
 	int now = time(NULL);
 	int elapsed = now - c.start;
 
-
-	cout << "Start: " << c.start << ", Now: " << now << endl;
-	cout << "elapsed: " << elapsed << ", socket; " << clientSock << endl;
-
 	if (elapsed == 0)
 		return 0;
 
 	int bps = c.bytes_read / elapsed;
-	cout << bps << " BPS by socket " << clientSock << ", maxBPS: " << MAX_BPS << endl;
 	return bps > MAX_BPS;
 
 }
@@ -357,22 +340,22 @@ int Sockets::transfer(int serverSock, int clientSock){
 	
 	// Transfer in progress
 	if (received > 0) {
-		cout << "Read message of size " << received << endl;
-		int size = write_message(clientSock, message, received);
-		cout << "Wrote " << size << " from " << serverSock << " to " << clientSock << endl;
+		//cout << "Read message of size " << received << endl;
+		write_message(clientSock, message, received);
+		//cout << "Wrote " << size << " from " << serverSock << " to " << clientSock << endl;
 
 
 		if (clientBPSIter == clientBPSMap.end())
 			clientBPSMap.insert(make_pair(clientSock, new_bps));
 		else {
-			cout << "updating!\n";
+			//cout << "updating!\n";
 			(clientBPSIter->second).bytes_read += received;
 		}
 
 				
 
 		if (httpsPairsIter == httpsPairs.end()) { // HTTP transfer, Need to save partial read
-			cout << "\n***** Store to later cache ********\n";
+			//cout << "\n***** Store to later cache ********\n";
 			// First read
 			if (serverRespIter == serverResp.end()) {
 				serverResponse response { received, message };
@@ -388,26 +371,29 @@ int Sockets::transfer(int serverSock, int clientSock){
 				response.data = merged;
 				serverRespIter->second = response;
 			}
-			cout << "At the end" << endl;
+			//cout << "At the end" << endl;
 		}
 	}
 	//Transfer done
 	else {
-		cout << "^^^^^^^^^^^^^^^^^^^^^^^^^^DONE READING^^^^^^^^^^^^^^^^^^^^^^^^^^" << endl;
+		cout << "^^^^^TRANSFER COMPLETE^^^^^^" << endl;
 		if (httpsPairsIter == httpsPairs.end() and serverRespIter != serverResp.end()) { // HTTP transfer, Need to cache complete
-			cout << "Caching complete transfer\n";
+			//cout << "Caching complete transfer\n";
 			serverResponse response = serverRespIter->second;
-			serverReqIter = serverReq.find(clientSock);
-			userRequest request = serverReqIter->second; 
-			(void) request;
-			char * requestName = getObjectname(request.request, request.portno);
-			int TTL = getTimeToLive(response.data);
-			if (TTL > 0){
-				cout << "Caching request of size " << request.bytes_read <<  " with response of size " << response.bytes_read << "; cache handles request parsing for GET object?\n";
-				sessionCache.cacheElement(requestName, request.request, response.data, TTL, response.bytes_read);
+			serverReqIter = serverReq.find(serverSock);
+			if (serverReqIter != serverReq.end()) {
+				userRequest request = serverReqIter->second; 
+				char * requestName = getObjectname(request.request, request.portno);
+				cout << "Req namee: " << requestName << endl;
+				int TTL = getTimeToLive(response.data);
+				if (TTL > 0 or true){
+					//cout << "caching: " << requestName << endl;
+					cout << "Caching request of size " << request.bytes_read <<  " with response of size " << response.bytes_read << "; cache handles request parsing for GET object?\n";
+					sessionCache.cacheElement(requestName, request.request, response.data, TTL, response.bytes_read);
+				}
 			}
 		}
-		cout << "Removing keys b/c complete transfer\n";
+		//cout << "Removing keys b/c complete transfer\n";
 		httpsPairs.erase(clientSock);
 		httpsPairs.erase(serverSock);
 		clientBPSMap.erase(clientSock);

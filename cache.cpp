@@ -56,12 +56,13 @@ void Cache::cacheElement(char *name, char *userRequest, char *data, int TTL, int
 bool Cache::dataInCache(char *name){
 	string key = name;
 	try{
+		cout << "key: " << key << endl;
 		dataCache.at(key);
 	}catch(...){
 		return false;
 	}
-	if (stale(key))
-		return false;
+	//if (stale(key))
+	//	return false;
 	return true;
 }
 
