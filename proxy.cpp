@@ -32,6 +32,7 @@ int main(int argc, char **argv){
         if (select (max_fd + 1, &copy_fd_set, NULL, NULL, NULL) < 0){
           	error("ERROR on select");
         }
+        cout << "GOT PASSED SELECT" << endl;
         //TO-DO: call update cache here?
         for (int sock_fd = 0; sock_fd < max_fd + 1; sock_fd++){
         	if (FD_ISSET (sock_fd, &copy_fd_set)){
@@ -71,7 +72,7 @@ int main(int argc, char **argv){
                 		cout << "New Transfer\n";
                 		sender_sock = iter->first;
                 		receiver_sock = iter->second;
-                		if (session.transfer(sender_sock, receiver_sock) == 0) { // Transfer completed
+                		if (session.readWrite(sender_sock, receiver_sock)) { // Transfer completed
                 			cout << "Closing client and server connections\n";
 			                close (sender_sock);
 			                FD_CLR (sender_sock, &master_fd_set);

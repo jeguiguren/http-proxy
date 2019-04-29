@@ -34,8 +34,10 @@ void Cache::cacheElement(char *name, char *userRequest, char *data, int TTL, int
 		if(!stale(key))
 			return;
 	}
-	if (dataCache.size() >= MAXDATACACHESIZE)
+	if (dataCache.size() >= MAXDATACACHESIZE){
+		cout << "*********************************************************************************************called remove old data";
 		removeOldData();
+	}
 	cout << "Caching :" << key << endl;
 	Event event = Event::CND;
 	int timeStored = time(NULL);

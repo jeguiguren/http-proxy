@@ -8,8 +8,10 @@ using namespace std;
 int write_message(int sockfd, char *message, int messageSize) {
 	cout << "Writing\n";
 	int n = send(sockfd, message, messageSize, MSG_NOSIGNAL);
-	if (n < 0)
+	if (n < 0){
+		cout << "The error was error " << n << endl;
 		throw runtime_error("Error on write");
+	}
 	return n;
 }
 
@@ -317,14 +319,17 @@ int Sockets::transfer(int serverSock, int clientSock){
 	// Transfer in progress
 	if (received > 0) {
 		cout << "Read message of size " << received << endl;
-		int size = write_message(clientSock, message, received);
-		cout << "Wrote " << size << " from " << serverSock << " to " << clientSock << endl;
+		//int size = write_message(clientSock, message, received);
+		//cout << "Wrote " << size << " from " << serverSock << " to " << clientSock << endl;
 
 		if (httpsPairsIter == httpsPairs.end()) { // HTTP transfer, Need to save partial read
 			cout << "\n***** Store to later cache ********\n";
 			// First read
 			if (serverRespIter == serverResp.end()) {
-				serverResponse response { received, message };
+				serverResponse response;
+				response.bytes_read = received;
+				response.data = message;
+				response.bytes_last_read = received;
 				serverResp.insert(make_pair(serverSock, response)); 
 				erase = 0;
 			} 
@@ -334,13 +339,16 @@ int Sockets::transfer(int serverSock, int clientSock){
 				char *merged = (char *)realloc(response.data, response.bytes_read + received);
 				memcpy(merged + response.bytes_read, message, received);
 				response.bytes_read += received;
+				response.bytes_last_read = received;
 				response.data = merged;
 				serverRespIter->second = response;
 			}
+			cout << "At the end" << endl;
 		}
 	}
 	//Transfer done
 	else {
+		cout << "^^^^^^^^^^^^^^^^^^^^^^^^^^DONE READING^^^^^^^^^^^^^^^^^^^^^^^^^^" << endl;
 		if (httpsPairsIter == httpsPairs.end() and serverRespIter != serverResp.end()) { // HTTP transfer, Need to cache complete
 			cout << "Caching complete transfer\n";
 			serverResponse response = serverRespIter->second;
@@ -366,8 +374,50 @@ int Sockets::transfer(int serverSock, int clientSock){
 }
 
 
-
-
+bool Sockets::readWrite(int serverSock, int clientSock){
+	int size;
+	serverResponse response;
+	httpsPairsIter = httpsPairs.find(serverSock);
+	serverRespIter = serverResp.find(serverSock);
+	if (serverRespIter == serverResp.end()){
+		cout << "first read" << endl;
+		transfer(serverSock, clientSock);
+		cout << "before updating response" << endl;
+		serverRespIter = serverResp.find(serverSock);
+		response = serverRespIter->second;
+		cout << "after updating response" << endl;
+		int timeBeforeSend = time(NULL);
+		size = write_message(clientSock, response.data, BANDWIDTHLIMIT);
+		cout << "Wrote " << size << " from " << serverSock << " to " << clientSock << endl;
+		int timeAfterSend = time(NULL);
+		response.waitTime = timeAfterSend - timeBeforeSend;
+		response.last_written = timeAfterSend;
+		response.bytes_written += size;
+		cout << "Bytes wrote" << response.bytes_written << endl;
+		response.done = false;
+		serverRespIter->second = response;
+	}else{
+		int currentTime = time(NULL);
+		response = serverRespIter->second;
+		if (response.bytes_last_read > 0){
+			cout << "************************second read*************************" << endl;
+			transfer(serverSock, clientSock);
+			serverRespIter = serverResp.find(serverSock);
+			response = serverRespIter->second;
+		}
+		if ((currentTime - response.last_written) >= response.waitTime){
+			cout << response.bytes_written;
+			cout << "______________________________________WRITING_______________________________________";
+			size = write_message(clientSock, (response.data + response.bytes_written), response.bytes_read - response.bytes_written);
+			cout << "Wrote " << size << " from " << serverSock << " to " << clientSock << endl;
+			response.last_written = time(NULL);
+			response.bytes_written += size;
+			if ((response.bytes_written == response.bytes_read) and (response.bytes_last_read == 0))
+				response.done = true;
+		}
+	}
+	return response.done;
+}
 
 
 

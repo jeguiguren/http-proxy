@@ -1,22 +1,30 @@
 ________________________________________________________________________________
-Fri Apr 26 14:31:10 2019 : http://www.cs.cmu.edu/~prs/bio.html:80 was added to the data cache.
+Sun Apr 28 09:12:22 2019 : http://www.cs.cmu.edu/~prs/bio.html:80 was added to the data cache.
 ________________________________________________________________________________
-Fri Apr 26 14:31:22 2019 : http://www.cs.tufts.edu/util.js:80 was added to the data cache.
+Sun Apr 28 09:13:12 2019 : http://www.cs.tufts.edu/comp/112/index.html:80 was added to the data cache.
 ________________________________________________________________________________
-Fri Apr 26 14:33:25 2019 : http://www.cs.tufts.edu/util.js:80 was gotten from the data cache.
+Sun Apr 28 09:13:12 2019 : http://www.cs.tufts.edu/util.js:80 was added to the data cache.
 ________________________________________________________________________________
-Fri Apr 26 14:33:30 2019 : http://www.cs.tufts.edu/comp/112/index.html:80 was added to the data cache.
+Sun Apr 28 09:14:17 2019 : http://www.cs.tufts.edu/util.js:80 was gotten from the data cache.
 ________________________________________________________________________________
-Fri Apr 26 14:33:30 2019 : http://www.cs.tufts.edu/util.js:80 was gotten from the data cache.
+Sun Apr 28 09:15:09 2019 : http://www.cs.cmu.edu/~prs/bio.html:80 was deleted from the data cache.
 ________________________________________________________________________________
-Fri Apr 26 14:33:44 2019 : http://www.cs.tufts.edu/comp/112/index.html:80 was gotten from the data cache.
+Sun Apr 28 09:15:09 2019 : http://engineering.tufts.edu/cs/:80 was added to the data cache.
 ________________________________________________________________________________
-Fri Apr 26 14:33:44 2019 : http://www.cs.tufts.edu/util.js:80 was gotten from the data cache.
+Sun Apr 28 09:16:13 2019 : http://www.cs.tufts.edu/comp/112/index.html:80 was deleted from the data cache.
 ________________________________________________________________________________
-Fri Apr 26 14:34:06 2019 : http://www.cs.cmu.edu/~dga/dga-headshot.jpg:80 was added to the data cache.
+Sun Apr 28 09:16:13 2019 : http://www.cs.cmu.edu/~prs/bio.html:80 was added to the data cache.
 ________________________________________________________________________________
-Fri Apr 26 14:34:09 2019 : http://www.cs.cmu.edu/~dga/dga-headshot.jpg:80 was gotten from the data cache.
+Sun Apr 28 10:18:27 2019 : http://www.cs.cmu.edu/favicon.ico:80 was added to the data cache.
 ________________________________________________________________________________
-Fri Apr 26 14:34:22 2019 : http://www.cs.cmu.edu/~dga/dga-headshot.jpg:80 was gotten from the data cache.
+Sun Apr 28 10:20:31 2019 : http://www.cs.cmu.edu/favicon.ico:80 was added to the data cache.
 ________________________________________________________________________________
-Fri Apr 26 15:26:40 2019 : http://ocsp.sectigo.com/MFcwVaADAgEAME4wTDBKMAkGBSsOAwIaBQAEFEML0g5PE3oabJGPJOXafjJNRzPIBBSNjF7EVK2K4Xfpm%2FmbBeG4AY1h4QIRAMafM6XWiwebhSEBhi3cfLE%3D:80 was added to the data cache.
+Sun Apr 28 11:00:57 2019 : http://www.cs.cmu.edu/favicon.ico:80 was added to the data cache.
+________________________________________________________________________________
+Sun Apr 28 11:02:18 2019 : http://www.cs.cmu.edu/~prs/bio.html:80 was added to the data cache.
+________________________________________________________________________________
+Sun Apr 28 11:02:18 2019 : http://www.cs.cmu.edu/favicon.ico:80 was added to the data cache.
+________________________________________________________________________________
+Sun Apr 28 11:23:16 2019 : http://www.cs.cmu.edu/~prs/bio.html:80 was added to the data cache.
+________________________________________________________________________________
+Sun Apr 28 11:26:38 2019 : http://www.cs.cmu.edu/favicon.ico:80 was added to the data cache.

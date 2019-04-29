@@ -51,6 +51,11 @@ public:
 	struct serverResponse{
 		int bytes_read;
 		char *data;
+		int bytes_last_read;
+		int waitTime;
+		int bytes_written;
+		int last_written;
+		bool done;
 	};
 
 	/***************************************************************************
@@ -85,6 +90,8 @@ public:
 		Purpose: read from server and write to client (caches if http)
 	***************************************************************************/
 	int transfer(int serverSock, int clientSock);
+
+	bool readWrite(int serverSock, int clientSock);
 
 	char* getObjectname(char *request, int portnum);
 
@@ -121,6 +128,8 @@ private:
 
 	void free_request(userRequest *req);
 	static const int REQUESTBUFSIZE = 4096;
+	//bandwidth in seconds
+	static const int BANDWIDTHLIMIT = 4000;
 	static const int RESPONSEBUFSIZE = 4096;
 };
 #endif
