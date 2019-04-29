@@ -16,8 +16,12 @@
 #include <netinet/in.h>
 #include <unordered_map> 
 #include <fcntl.h>
+#include <chrono>
+#include <ctime>
+
 
 using namespace std;
+
 #define MSG_NOSIGNAL 0x2000 /* don't raise SIGPIPE */
 
 
@@ -30,7 +34,7 @@ public:
 		Returns: Nothing
 		Puroprse: creates instance of this class
 	******************************/
-	Sockets(int port);
+	Sockets(int port, int bps);
 
 	/***************************
 		Function: destructor
@@ -51,11 +55,11 @@ public:
 	struct serverResponse{
 		int bytes_read;
 		char *data;
-		int bytes_last_read;
-		int waitTime;
-		int bytes_written;
-		int last_written;
-		bool done;
+	};
+
+	struct clientBPS{
+		int start;
+		int bytes_read;
 	};
 
 	/***************************************************************************
@@ -97,7 +101,12 @@ public:
 
 private:
 	int myPort;
+	int MAX_BPS;
 	Cache sessionCache;
+	
+	unordered_map<int, clientBPS> clientBPSMap; //maps client sockets to BPS structs
+	unordered_map<int, clientBPS>::iterator clientBPSIter;
+
 	unordered_map<int, userRequest> serverReq; //maps server sockets to Request
 	unordered_map<int, userRequest>::iterator serverReqIter;
 
@@ -123,6 +132,9 @@ private:
 		Puroprse: opens up new socket for server
 	***************************************************************************/
 	int connect_to_server(userRequest request);
+
+	int bandwidth_exceeded(int clientSock);
+
 
 
 
