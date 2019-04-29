@@ -36,8 +36,9 @@ void Sockets::free_request(userRequest *req) {
 	Function: constructor
 	Puroprse: creates instance of this class
 *******************************************************************************/
-Sockets::Sockets(int port){
+Sockets::Sockets(int port, int bps){
 	myPort = port;
+	MAX_BPS = bps;
 }
 
 /*******************************************************************************
@@ -91,10 +92,14 @@ int Sockets::accept_new_connection(int listen_sock){
 
 
 //TO-DO: change to use jorge's util file
-int getportno(char *request){
+int getportno(char *request, int isConnect){
 	char *holder;
 	int portno = 0;
-	holder = strstr(request, "Host:") + 6;
+	if (isConnect)
+    	holder = strstr(request, "CONNECT ") + 8;
+    else
+    	holder = strstr(request, "Host:") + 6;
+    
 	if (strchr(holder, ':'))
 		portno = atoi(strchr(holder, ':') + 1);
 	if (portno == 0)
@@ -102,17 +107,19 @@ int getportno(char *request){
 	return portno;
 }
 
-char *gethostname(char *request){
+char *gethostname(char *request, int isConnect){
 	//size_t start = str.find("Host:"); 
 
     //if (found != string::npos) 
-
-	char *holder;
-	int i = 0;
-	cout << "before malloc\n";
+	//CONNECT www.google.com:443 HTTP/1.0
 	char *hostname = (char* )malloc(100);
-	cout << "after malloc\n";
-	holder = strstr(request, "Host:") + 6;
+	char *holder;
+	
+    if (isConnect)
+    	holder = strstr(request, "CONNECT ") + 8;
+    else
+    	holder = strstr(request, "Host:") + 6;
+    int i = 0;
 	while (holder[i] != ':' && holder[i] != '\r'){
 		hostname[i] = holder[i];
 		i++;
@@ -143,9 +150,9 @@ Sockets::userRequest Sockets::get_client_request(int client_fd){
 		cout << request;
 		clientRequest.bytes_read = bytes_read;
 		clientRequest.request = request;
-		clientRequest.hostname = gethostname(request);
-		clientRequest.portno = getportno(request);
 		clientRequest.isHttps = isHttps(request);
+		clientRequest.hostname = gethostname(request, clientRequest.isHttps);
+		clientRequest.portno = getportno(request, clientRequest.isHttps);
 		if ((strcmp(clientRequest.hostname, "localhost") == 0) and 
 			clientRequest.portno == myPort)
 			throw runtime_error("I am only a proxy");
@@ -247,6 +254,30 @@ int Sockets::process_request(int client_fd, int *isHttps) {
 
 
 
+int Sockets::bandwidth_exceeded(int clientSock) {
+	
+	clientBPSIter = clientBPSMap.find(clientSock);
+	if (clientBPSIter == clientBPSMap.end())
+		return 0;
+
+	struct clientBPS c = clientBPSIter->second;
+
+	int now = time(NULL);
+	int elapsed = now - c.start;
+
+
+	cout << "Start: " << c.start << ", Now: " << now << endl;
+	cout << "elapsed: " << elapsed << ", socket; " << clientSock << endl;
+
+	if (elapsed == 0)
+		return 0;
+
+	int bps = c.bytes_read / elapsed;
+	cout << bps << " BPS by socket " << clientSock << ", maxBPS: " << MAX_BPS << endl;
+	return bps > MAX_BPS;
+
+}
+
 /*******************************************************************************
 	Function: respond
 	Puroprse: reads from Server and writes to client in chunks of at least RESPONSEBUFSIZE (except last chunk)
@@ -255,25 +286,44 @@ int Sockets::process_request(int client_fd, int *isHttps) {
 *******************************************************************************/
 int Sockets::transfer(int serverSock, int clientSock){
 
+	if (bandwidth_exceeded(clientSock)) {
+		cout << "\n\n ******* EXCEEDED *******\n\n";
+		return 1;
+	}
+
 	char *message = NULL;
 	int received = read_message(serverSock, &message, RESPONSEBUFSIZE);
 	int erase = 1;
 
+	int now = time(NULL);
+	struct clientBPS new_bps = {now, received};			
+
 	httpsPairsIter = httpsPairs.find(serverSock);
 	serverRespIter = serverResp.find(serverSock);
-		
+	clientBPSIter = clientBPSMap.find(clientSock);
+	
 	// Transfer in progress
 	if (received > 0) {
 		cout << "Read message of size " << received << endl;
 		int size = write_message(clientSock, message, received);
 		cout << "Wrote " << size << " from " << serverSock << " to " << clientSock << endl;
 
+
+		if (clientBPSIter == clientBPSMap.end())
+			clientBPSMap.insert(make_pair(clientSock, new_bps));
+		else {
+			cout << "updating!\n";
+			(clientBPSIter->second).bytes_read += received;
+		}
+
+				
+
 		if (httpsPairsIter == httpsPairs.end()) { // HTTP transfer, Need to save partial read
 			cout << "\n***** Store to later cache ********\n";
 			// First read
 			if (serverRespIter == serverResp.end()) {
 				serverResponse response { received, message };
-				serverResp.insert(make_pair(serverSock, response)); 
+				serverResp.insert(make_pair(serverSock, response));
 				erase = 0;
 			} 
 			//Subsequent reads
@@ -304,6 +354,9 @@ int Sockets::transfer(int serverSock, int clientSock){
 			httpsPairs.erase(clientSock);
 			httpsPairs.erase(serverSock);
 		}
+
+		//Clean every map
+
 	}
 	if (message != NULL and erase)
 		free(message);

@@ -20,7 +20,7 @@ urls = cfg['urls']
 setup_logger('', console=True)
 
 load = Load(cfg['numClients'], cfg['reqsPerClient'], cfg['iterations'], PROXYDICT, urls)
-load.run()
+#load.run()
 
 cdf = CDF(PROXYDICT, urls)
 cdf.run(cfg['numRequests'])

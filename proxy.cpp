@@ -1,6 +1,7 @@
 
 #include "cache.h"
 #include "sockets.h"
+#include <signal.h>
 #include "util.h"
 #include <unordered_map> 
 #import <thread> 
@@ -9,21 +10,25 @@
 
 int main(int argc, char **argv){
 
+    if (argc != 3) {
+      fprintf(stderr, "usage: %s <port> <maxBPS>\n", argv[0]);
+      exit(1);
+    }
+
 	unordered_map<int, int> senderReceiver;
 	unordered_map<int, int>::iterator iter;
 
 	int sender_sock, receiver_sock;
 	int myPort = atoi(argv[1]);
-    Sockets session(myPort);
+    int maxBPS = atoi(argv[2]) * 1000;
+    
+    Sockets session(myPort, maxBPS);
     int isHttps = 0;
     
     fd_set master_fd_set, copy_fd_set;
     int listen_sock, max_fd, new_sock_fd;
-    if (argc != 2) {
-      fprintf(stderr, "usage: %s <port>\n", argv[0]);
-      exit(1);
-    }
-    signal(SIGPIPE, SIG_IGN);
+    
+    signal(SIGPIPE, SIG_IGN); // Prevent SIG_PIPE
     listen_sock = session.create_proxy_address(myPort);
     max_fd = listen_sock;
     FD_ZERO (&master_fd_set);
