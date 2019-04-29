@@ -306,7 +306,7 @@ int Sockets::process_request(int client_fd, int *isHttps) {
 }
 
 
-
+// Returns True if client's download rate > MAX_BPS
 int Sockets::bandwidth_exceeded(int clientSock) {
 	
 	clientBPSIter = clientBPSMap.find(clientSock);
@@ -407,14 +407,12 @@ int Sockets::transfer(int serverSock, int clientSock){
 				sessionCache.cacheElement(requestName, request.request, response.data, TTL, response.bytes_read);
 			}
 		}
-		else {
-			cout << "Removing https b/c complete transfer\n";
-			httpsPairs.erase(clientSock);
-			httpsPairs.erase(serverSock);
-		}
-
-		//Clean every map
-
+		cout << "Removing keys b/c complete transfer\n";
+		httpsPairs.erase(clientSock);
+		httpsPairs.erase(serverSock);
+		clientBPSMap.erase(clientSock);
+		serverReq.erase(serverSock);
+		serverResp.erase(serverSock);
 	}
 	if (message != NULL and erase)
 		free(message);
