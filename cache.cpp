@@ -24,6 +24,12 @@ bool Cache::stale(string key){
 	return false;
 }
 
+
+void Cache::set_cache_size(int size) {
+	MAXDATACACHESIZE = size;
+}
+
+
 /***************************
 	Function: cacheElement
 	Puroprse: adds an element to the cache
@@ -56,14 +62,11 @@ void Cache::cacheElement(char *name, char *userRequest, char *data, int TTL, int
 bool Cache::dataInCache(char *name){
 	string key = name;
 	try{
-		cout << "key: " << key << endl;
 		dataCache.at(key);
 	}catch(...){
 		return false;
 	}
-	//if (stale(key))
-	//	return false;
-	return true;
+	return not stale(key);
 }
 
 /******************************
@@ -72,7 +75,6 @@ bool Cache::dataInCache(char *name){
 *******************************/
 Cache::cacheResponse Cache::getDataFromCache(char *name){
 	string key = name;
-	cout << "Trying to get: " << key << "from the cache" << endl;
 	Event event = Event::RD;
 	dataCacheNode element = dataCache.at(key);
 	char *data = element.data;
@@ -91,10 +93,11 @@ bool operator <(const datapriority& first, const datapriority& second){
 }
 
 double Cache::getPriority(dataCacheNode data){
-	//TO-DO: this is in seconds maybe cahnge it to minutes
 	int currentTime = time(NULL);
 	int timeIncache = currentTime - data.timeStored;
-	return  ((*(data.hitRate) / timeIncache) * (1 / data.dataLength));
+	if (timeIncache != 0 and data.dataLength != 0)
+		return  ((*(data.hitRate) / timeIncache) * (1 / data.dataLength));
+	return 0;
 }
 
 /******************************
@@ -122,9 +125,7 @@ ofstream openFile(){
 	ofstream outfile;
 	outfile.open(FILENAME, std::ofstream::out | std::ofstream::app);
 	if (!outfile.is_open())
-	{
 		throw runtime_error("Failed to open cachelog.txt");
-	}
 	return outfile;
 }
 

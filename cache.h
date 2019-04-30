@@ -69,6 +69,9 @@ public:
 	bool dataInCache(char *name);
 
 
+	void set_cache_size(int size);
+
+
 	/******************************
 		Function: getDataFromCache
 		Parameters: name: key of the element to be returned
@@ -97,7 +100,7 @@ private:
 	  considered obselete*/
 	static const int LEEWAY = 10;
 	static const int OLDTIME = 7200;
-	static const int MAXDATACACHESIZE = 50;
+	uint MAXDATACACHESIZE = 500;
 
 	/******************************
 		Function: removeOldData

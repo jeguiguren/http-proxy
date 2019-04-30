@@ -8,8 +8,8 @@
 
 int main(int argc, char **argv){
 
-    if (argc != 3) {
-      fprintf(stderr, "usage: %s <port> <maxBPS>\n", argv[0]);
+    if (argc != 4) {
+      fprintf(stderr, "usage: %s <port> <maxBPS> <cacheSize>\n", argv[0]);
       exit(1);
     }
 
@@ -19,10 +19,12 @@ int main(int argc, char **argv){
 	int sender_sock, receiver_sock;
 	int myPort = atoi(argv[1]);
     int maxBPS = atoi(argv[2]) * 1000;
+    int cacheSize = atoi(argv[3]);
+    
     if (maxBPS == 0)
         maxBPS = 100000000;
     
-    Sockets session(myPort, maxBPS);
+    Sockets session(myPort, maxBPS, cacheSize);
     int isHttps = 0;
     
     fd_set master_fd_set, copy_fd_set;
@@ -36,12 +38,9 @@ int main(int argc, char **argv){
     while(1){
         FD_ZERO (&copy_fd_set);
         memcpy(&copy_fd_set, &master_fd_set, sizeof(master_fd_set));
-        //cout << "Waiting.............................." << endl;
         if (select (max_fd + 1, &copy_fd_set, NULL, NULL, NULL) < 0){
           	error("ERROR on select");
         }
-        //cout << "GOT PASSED SELECT" << endl;
-        //TO-DO: call update cache here?
         for (int sock_fd = 0; sock_fd < max_fd + 1; sock_fd++){
         	if (FD_ISSET (sock_fd, &copy_fd_set)){
             	if (sock_fd == listen_sock){
@@ -50,39 +49,31 @@ int main(int argc, char **argv){
                     	FD_SET(new_sock_fd, &master_fd_set);
                     	if (new_sock_fd > max_fd)
                         	max_fd = new_sock_fd;
-                    cout << "New client on socket " << new_sock_fd << endl;
+                    //cout << "New client on socket " << new_sock_fd << endl;
                 	}else{
                     	error("ERROR on accept");
                 	}
             }else{
-            	//cout << "Socket ready " << sock_fd << endl;
-                try{
-                	//New client request
-                	// TODO: add socket function to see if cached; else, proceed
-                	
+                try{               	
                 	iter = senderReceiver.find(sock_fd);
                 	if (iter == senderReceiver.end()) {
-                		cout << "New client request from " << sock_fd << endl;
-
+                		
                         //Returns newly oppened server socket
                         new_sock_fd = session.process_request(sock_fd, &isHttps); 
                         senderReceiver.insert(make_pair(new_sock_fd, sock_fd)); 
                         FD_SET(new_sock_fd, &master_fd_set); 
                         if (new_sock_fd > max_fd)
                             max_fd = new_sock_fd;
-                        cout << "New server on socket " << new_sock_fd << endl;
-
+                        
                         if (isHttps)
                             senderReceiver.insert(make_pair(sock_fd, new_sock_fd));
                 	} 
                 	// Server socket ready to write
                 	else {
-                		//cout << "New Transfer\n";
                 		sender_sock = iter->first;
                 		receiver_sock = iter->second;
                 		if (session.transfer(sender_sock, receiver_sock) == 0) { // Transfer completed
-                			cout << "Closing client and server connections\n";
-			                close (sender_sock);
+                			close (sender_sock);
 			                FD_CLR (sender_sock, &master_fd_set);
                             senderReceiver.erase(sender_sock);
 			                close (receiver_sock);

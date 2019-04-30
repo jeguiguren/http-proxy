@@ -1,6 +1,0 @@
-comp112-01.cs.tufts.edu 
-comp112-02.cs.tufts.edu 
-comp112-03.cs.tufts.edu 
-comp112-04.cs.tufts.edu
-comp112-05.cs.tufts.edu 
-comp112-06.cs.tufts.edu
