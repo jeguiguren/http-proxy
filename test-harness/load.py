@@ -97,26 +97,25 @@ class Load(object):
 			xs = [p.totalReqs for p in data_points]
 			plt.xlabel('Total Requests', fontsize=10)
 			bs = [p.numWorkers for p in data_points]
-			cs = [round(p.avgWorkerTime, 2) for p in data_points]
-			plt.plot(xs, ys, 'ro', label='# Clients, Client Perceived Time (s)')
+			#cs = [round(p.avgWorkerTime, 2) for p in data_points]
+			plt.plot(xs, ys, 'ro', label='# Clients, % Errors')
 
 		elif iterReqs:
 			xs = [p.totalReqs for p in data_points]
 			plt.xlabel('Total Requests', fontsize=10)
 			bs = [p.totalReqs / p.numWorkers for p in data_points]
-			cs = [round(p.avgWorkerTime, 2) for p in data_points]
-			plt.plot(xs, ys, 'ro', label='Requests per Client, Client Perceived Time (s)')
+			#cs = [round(p.avgWorkerTime, 2) for p in data_points]
+			plt.plot(xs, ys, 'ro', label='Requests per Client, % Errors')
 
 		elif fixedReqs:
 			xs = [p.numWorkers for p in data_points]
 			plt.xlabel('Number of Clients', fontsize=10)
 			bs = [p.totalReqs / p.numWorkers for p in data_points]
-			cs = [round(p.avgWorkerTime, 2) for p in data_points]
-			plt.plot(xs, ys, 'ro', label='Requests per Client, Client Perceived Time (s)')
+			#cs = [round(p.avgWorkerTime, 2) for p in data_points]
+			plt.plot(xs, ys, 'ro', label='Requests per Client, % Errors')
 		
-		
-
-
+		cs = [int((p.totalErrors / float(p.totalReqs)) * 100) for p in data_points]
+			
 		
 		plt.title(title, fontsize=10)	
 		plt.legend(loc='upper right', fontsize=7)

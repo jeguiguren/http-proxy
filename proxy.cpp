@@ -29,7 +29,7 @@ int main(int argc, char **argv){
     int listen_sock, max_fd, new_sock_fd;
     
     signal(SIGPIPE, SIG_IGN); // Prevent SIG_PIPE
-    listen_sock = session.create_proxy_address(myPort);
+    listen_sock = session.create_proxy_address();
     max_fd = listen_sock;
     FD_ZERO (&master_fd_set);
     FD_SET (listen_sock, &master_fd_set);

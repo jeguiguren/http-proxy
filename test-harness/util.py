@@ -31,9 +31,9 @@ def setup_logger(name, log_file=None, console=False, level=logging.INFO):
 def get_request(url, proxyDict=None):
 	
 	if proxyDict is None:
-		r = requests.get(url, timeout=2)
+		r = requests.get(url, timeout=8)
 	else:
-		r = requests.get(url, proxies=proxyDict, timeout=2)
+		r = requests.get(url, proxies=proxyDict, timeout=8)
 
 	if r.status_code != 200: 
 		raise Exception('{} Response Code'.format(r.status_code))

@@ -2,11 +2,11 @@
   "proxyIp": "localhost",
   "proxyPort": 9050,
   "urls": [
-    "https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Retry-After",
-    "http://www.cs.cmu.edu/~dga/dga-headshot.jpg"
+    "https://www.cs.tufts.edu/comp/105/data.html",
+    "https://upload.wikimedia.org/wikipedia/commons/f/ff/Pizigani_1367_Chart_10MB.jpg"
   ],
-  "numClients": 10,
-  "reqsPerClient": 10,
+  "numClients": 5,
+  "reqsPerClient": 5,
   "iterations": 10,
   "numRequests": 500
 }

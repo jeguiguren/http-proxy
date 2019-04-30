@@ -55,7 +55,7 @@ Sockets::~Sockets(){
 	Function: create_proxy_address
 	Puroprse: creates a proxy socket
 *******************************************************************************/
-int Sockets::create_proxy_address(int portno){
+int Sockets::create_proxy_address(){
 	struct sockaddr_in serveraddr;
 	int optval, listen_sock;
 	listen_sock = socket(AF_INET, SOCK_STREAM, 0);
@@ -67,7 +67,7 @@ int Sockets::create_proxy_address(int portno){
 	bzero((char *) &serveraddr, sizeof(serveraddr));
 	serveraddr.sin_family = AF_INET;
 	serveraddr.sin_addr.s_addr = htonl(INADDR_ANY);
-	serveraddr.sin_port = htons((unsigned short)portno);
+	serveraddr.sin_port = htons((unsigned short)myPort);
 	//TO-DO: Ask why the :: is needed
 	if (::bind(listen_sock, (struct sockaddr *)&serveraddr, 
 											sizeof(serveraddr)) < 0)
@@ -128,11 +128,10 @@ char *gethostname(char *request, int isConnect){
 	return hostname;
 }
 
-char* Sockets::getObjectname(char *request, int portnum){
+char* Sockets::getObjectname(char *request){
     char *name = (char* )malloc(100);
     int bytesUsed = 100;
     char *holder;
-    char intString[6];
     int i = 0;
     holder = strstr(request, "GET ") + 4;
     while(holder[i] != ' '){
@@ -182,7 +181,7 @@ Sockets::userRequest Sockets::get_client_request(int client_fd){
 	char *request = NULL;
 	int bytes_read = read_message(client_fd, &request, REQUESTBUFSIZE);
 
-	if (bytes_read > 0){
+	if (bytes_read > 0 and request != NULL){
 		clientRequest.bytes_read = bytes_read;
 		clientRequest.request = request;
 		clientRequest.isHttps = isHttps(request);
@@ -257,7 +256,7 @@ int Sockets::process_request(int client_fd, int *isHttps) {
 
 	userRequest request = get_client_request(client_fd);
 	if (!request.isHttps){
-		char * requestName = getObjectname(request.request, request.portno);
+		char * requestName = getObjectname(request.request);
 		cout << "Req Name: " << requestName << endl;
 		if (sessionCache.dataInCache(requestName)){
 			cout << "\n*** writing from cache ***\n";
@@ -383,12 +382,12 @@ int Sockets::transfer(int serverSock, int clientSock){
 			serverReqIter = serverReq.find(serverSock);
 			if (serverReqIter != serverReq.end()) {
 				userRequest request = serverReqIter->second; 
-				char * requestName = getObjectname(request.request, request.portno);
+				char * requestName = getObjectname(request.request);
 				cout << "Req namee: " << requestName << endl;
 				int TTL = getTimeToLive(response.data);
-				if (TTL > 0 or true){
+				if (TTL > 0){
 					//cout << "caching: " << requestName << endl;
-					cout << "Caching request of size " << request.bytes_read <<  " with response of size " << response.bytes_read << "; cache handles request parsing for GET object?\n";
+					//cout << "Caching request of size " << request.bytes_read <<  " with response of size " << response.bytes_read << "; cache handles request parsing for GET object?\n";
 					sessionCache.cacheElement(requestName, request.request, response.data, TTL, response.bytes_read);
 				}
 			}

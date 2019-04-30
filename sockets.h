@@ -68,7 +68,7 @@ public:
 		Returns: the file descriptor for the socket
 		Puroprse: creates a proxy socket
 	***************************************************************************/
-	int create_proxy_address(int portno);
+	int create_proxy_address();
 
 	/***************************************************************************
 		Function: accept_new_connection
@@ -94,10 +94,6 @@ public:
 		Purpose: read from server and write to client (caches if http)
 	***************************************************************************/
 	int transfer(int serverSock, int clientSock);
-
-	bool readWrite(int serverSock, int clientSock);
-
-	char* getObjectname(char *request, int portnum);
 
 private:
 	int myPort;
@@ -134,10 +130,7 @@ private:
 	int connect_to_server(userRequest request);
 
 	int bandwidth_exceeded(int clientSock);
-
-
-
-
+	char* getObjectname(char *request);
 	void free_request(userRequest *req);
 	static const int REQUESTBUFSIZE = 4096;
 	//bandwidth in seconds
