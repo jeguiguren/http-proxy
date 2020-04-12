@@ -30,11 +30,11 @@ public:
 
 	/***************************
 		Function: constructor
-		Parameters: port where master socket is running
+		Parameters: port for master socket, client badnwidth limit, cache size
 		Returns: Nothing
 		Puroprse: creates instance of this class
 	******************************/
-	Sockets(int port, int bps);
+	Sockets(int port, int bps, int csize);
 
 	/***************************
 		Function: destructor
@@ -133,8 +133,6 @@ private:
 	char* getObjectname(char *request);
 	void free_request(userRequest *req);
 	static const int REQUESTBUFSIZE = 4096;
-	//bandwidth in seconds
-	static const int BANDWIDTHLIMIT = 4000;
 	static const int RESPONSEBUFSIZE = 4096;
 };
 #endif

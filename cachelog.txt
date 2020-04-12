@@ -1,0 +1,76 @@
+________________________________________________________________________________
+Tue Apr 30 14:22:04 2019 : http://www.cs.tufts.edu/comp/112/index.html was added to the data cache.
+________________________________________________________________________________
+Tue Apr 30 14:22:04 2019 : http://www.cs.tufts.edu/util.js was added to the data cache.
+________________________________________________________________________________
+Tue Apr 30 14:22:10 2019 : http://www.cs.tufts.edu/comp/112/index.html was gotten from the data cache.
+________________________________________________________________________________
+Tue Apr 30 14:22:10 2019 : http://www.cs.tufts.edu/util.js was gotten from the data cache.
+________________________________________________________________________________
+Tue Apr 30 14:22:18 2019 : http://www.cs.tufts.edu/comp/112/index.html was deleted from the data cache.
+________________________________________________________________________________
+Tue Apr 30 14:22:18 2019 : http://www.cs.cmu.edu/~prs/bio.html was added to the data cache.
+________________________________________________________________________________
+Tue Apr 30 14:22:18 2019 : http://www.cs.tufts.edu/util.js was deleted from the data cache.
+________________________________________________________________________________
+Tue Apr 30 14:22:18 2019 : http://www.cs.cmu.edu/favicon.ico was added to the data cache.
+________________________________________________________________________________
+Tue Apr 30 14:22:26 2019 : http://www.cs.cmu.edu/~prs/bio.html was deleted from the data cache.
+________________________________________________________________________________
+Tue Apr 30 14:22:26 2019 : http://www.cs.cmu.edu/~dga/dga-headshot.jpg was added to the data cache.
+________________________________________________________________________________
+Tue Apr 30 14:22:27 2019 : http://www.cs.cmu.edu/favicon.ico was deleted from the data cache.
+________________________________________________________________________________
+Tue Apr 30 14:22:27 2019 : http://www.cs.tufts.edu/comp/112/index.html was added to the data cache.
+________________________________________________________________________________
+Tue Apr 30 14:22:27 2019 : http://www.cs.cmu.edu/~dga/dga-headshot.jpg was deleted from the data cache.
+________________________________________________________________________________
+Tue Apr 30 14:22:27 2019 : http://www.cs.tufts.edu/util.js was added to the data cache.
+________________________________________________________________________________
+Tue Apr 30 14:22:44 2019 : http://www.cs.tufts.edu/comp/112/index.html was deleted from the data cache.
+________________________________________________________________________________
+Tue Apr 30 14:22:44 2019 : http://www.cs.cmu.edu/~dga/dga-headshot.jpg was added to the data cache.
+________________________________________________________________________________
+Tue Apr 30 14:22:44 2019 : http://www.cs.tufts.edu/util.js was deleted from the data cache.
+________________________________________________________________________________
+Tue Apr 30 14:22:44 2019 : http://www.cs.cmu.edu/favicon.ico was added to the data cache.
+________________________________________________________________________________
+Tue Apr 30 14:22:59 2019 : http://www.cs.cmu.edu/~dga/dga-headshot.jpg was deleted from the data cache.
+________________________________________________________________________________
+Tue Apr 30 14:22:59 2019 : http://www.cs.tufts.edu/comp/112/index.html was added to the data cache.
+________________________________________________________________________________
+Tue Apr 30 14:22:59 2019 : http://www.cs.cmu.edu/favicon.ico was deleted from the data cache.
+________________________________________________________________________________
+Tue Apr 30 14:22:59 2019 : http://www.cs.tufts.edu/util.js was added to the data cache.
+________________________________________________________________________________
+Tue Apr 30 14:23:09 2019 : http://www.cs.tufts.edu/comp/112/index.html was deleted from the data cache.
+________________________________________________________________________________
+Tue Apr 30 14:23:09 2019 : http://engineering.tufts.edu/cs/ was added to the data cache.
+________________________________________________________________________________
+Tue Apr 30 14:23:12 2019 : http://www.cs.tufts.edu/util.js was deleted from the data cache.
+________________________________________________________________________________
+Tue Apr 30 14:23:12 2019 : http://www.cs.cmu.edu/~prs/bio.html was added to the data cache.
+________________________________________________________________________________
+Tue Apr 30 14:23:12 2019 : http://engineering.tufts.edu/cs/ was deleted from the data cache.
+________________________________________________________________________________
+Tue Apr 30 14:23:12 2019 : http://www.cs.cmu.edu/favicon.ico was added to the data cache.
+________________________________________________________________________________
+Tue Apr 30 14:23:16 2019 : http://www.cs.cmu.edu/~prs/bio.html was deleted from the data cache.
+________________________________________________________________________________
+Tue Apr 30 14:23:16 2019 : http://engineering.tufts.edu/cs/ was added to the data cache.
+________________________________________________________________________________
+Tue Apr 30 14:24:11 2019 : http://www.cs.cmu.edu/favicon.ico was gotten from the data cache.
+________________________________________________________________________________
+Tue Apr 30 14:24:21 2019 : http://www.cs.cmu.edu/favicon.ico was deleted from the data cache.
+________________________________________________________________________________
+Tue Apr 30 14:24:21 2019 : http://www.cs.cmu.edu/~dga/dga-headshot.jpg was added to the data cache.
+________________________________________________________________________________
+Tue Apr 30 14:24:23 2019 : http://www.cs.cmu.edu/~dga/dga-headshot.jpg was gotten from the data cache.
+________________________________________________________________________________
+Tue Apr 30 14:24:23 2019 : http://engineering.tufts.edu/cs/ was deleted from the data cache.
+________________________________________________________________________________
+Tue Apr 30 14:24:23 2019 : http://www.cs.cmu.edu/favicon.ico was added to the data cache.
+________________________________________________________________________________
+Tue Apr 30 14:24:26 2019 : http://www.cs.cmu.edu/~dga/dga-headshot.jpg was gotten from the data cache.
+________________________________________________________________________________
+Tue Apr 30 14:24:26 2019 : http://www.cs.cmu.edu/favicon.ico was gotten from the data cache.

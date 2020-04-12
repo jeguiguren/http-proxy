@@ -6,17 +6,14 @@ using namespace std;
 */
 
 int write_message(int sockfd, char *message, int messageSize) {
-	//cout << "Writing\n";
 	int n = send(sockfd, message, messageSize, MSG_NOSIGNAL);
 	if (n < 0){
-		//cout << "The error was error " << n << endl;
 		throw runtime_error("Error on write");
 	}
 	return n;
 }
 
 int read_message(int sockfd, char **message, int scale) {
-	//cout << "reading\n";
 	char *buffer = (char*) malloc(scale);
 	int received = read(sockfd, (void *)buffer, scale);
 	if (received < 0) 
@@ -38,9 +35,10 @@ void Sockets::free_request(userRequest *req) {
 	Function: constructor
 	Puroprse: creates instance of this class
 *******************************************************************************/
-Sockets::Sockets(int port, int bps){
+Sockets::Sockets(int port, int bps, int cacheSize){
 	myPort = port;
 	MAX_BPS = bps;
+	sessionCache.set_cache_size(cacheSize);
 }
 
 /*******************************************************************************
@@ -68,13 +66,11 @@ int Sockets::create_proxy_address(){
 	serveraddr.sin_family = AF_INET;
 	serveraddr.sin_addr.s_addr = htonl(INADDR_ANY);
 	serveraddr.sin_port = htons((unsigned short)myPort);
-	//TO-DO: Ask why the :: is needed
 	if (::bind(listen_sock, (struct sockaddr *)&serveraddr, 
 											sizeof(serveraddr)) < 0)
 		throw runtime_error("ERROR on binding");
 	if (listen(listen_sock, 10) < 0)
 		throw runtime_error("ERROR on listen");
-	//cout << "Created the proxy" << endl;
 	return listen_sock;
 }
 
@@ -88,12 +84,10 @@ int Sockets::accept_new_connection(int listen_sock){
 	clientlen = sizeof(clientaddr);
 	int sock_fd = accept(listen_sock, (struct sockaddr *) &clientaddr, 
 														(socklen_t*)&clientlen);
-	//cout << "Accepted connection to: " << sock_fd << endl;
 	return sock_fd;
 }
 
 
-//TO-DO: change to use jorge's util file
 int getportno(char *request, int isConnect){
 	char *holder;
 	int portno = 0;
@@ -106,7 +100,6 @@ int getportno(char *request, int isConnect){
 		portno = atoi(strchr(holder, ':') + 1);
 	if (portno == 0)
 		portno = 80;
-	//cout << portno << endl;
 	return portno;
 }
 
@@ -124,11 +117,17 @@ char *gethostname(char *request, int isConnect){
 		i++;
 	}
 	hostname[i] = '\0';
-	//cout << "host " << hostname << endl;
 	return hostname;
 }
 
+int isGet(string req) {
+	size_t index = req.find("GET");
+	return index != string::npos;
+}
+
 char* Sockets::getObjectname(char *request){
+	if (not isGet(request))
+		return NULL;
     char *name = (char* )malloc(100);
     int bytesUsed = 100;
     char *holder;
@@ -157,15 +156,13 @@ int getTimeToLive(char *response){
     holder = strstr(response, "max-age=");
     if (holder != NULL){
         if((holder + 8)[0] == '0'){
-            //timeToLive = 0;
             return 0;
         }
         timeToLive = atoi(holder + 8);
     }
-    if((timeToLive == 0) || (holder == NULL)){
-    	//TO-DO: change this to have to deal with minutes
+    if((timeToLive == 0) || (holder == NULL))
         timeToLive = 3600;
-    }
+
     return timeToLive;
 
 }
@@ -203,7 +200,6 @@ Sockets::userRequest Sockets::get_client_request(int client_fd){
 	Puroprse: connects and writes to the server
 *******************************************************************************/
 int Sockets::connect_to_server(userRequest request) {
-	//cout << "in connect\n";
 	int sockfd;
 	string host_name = request.hostname;
 	char hostname[host_name.length() + 1];
@@ -240,7 +236,6 @@ int Sockets::connect_to_server(userRequest request) {
 	    if (select(sockfd + 1, NULL, &fdset, NULL, &tv) <= 0)
 	    	throw runtime_error("ERROR connecting to server");
 	}
-	//cout << "Connected to server" << endl;
 	return sockfd;
 }
 
@@ -257,12 +252,12 @@ int Sockets::process_request(int client_fd, int *isHttps) {
 	userRequest request = get_client_request(client_fd);
 	if (!request.isHttps){
 		char * requestName = getObjectname(request.request);
-		cout << "Req Name: " << requestName << endl;
-		if (sessionCache.dataInCache(requestName)){
-			cout << "\n*** writing from cache ***\n";
-			Cache::cacheResponse response = sessionCache.getDataFromCache(requestName);
-			write_message(client_fd, response.data, response.data_length);
-			throw runtime_error("Wrote from cache");
+		if (requestName != NULL) {
+			if (sessionCache.dataInCache(requestName)){
+				Cache::cacheResponse response = sessionCache.getDataFromCache(requestName);
+				write_message(client_fd, response.data, response.data_length);
+				throw runtime_error("Wrote from cache\n"); // To close socket
+			}
 		}
 	}
 
@@ -284,7 +279,6 @@ int Sockets::process_request(int client_fd, int *isHttps) {
 		free_request(&request);
 	}
 	else {
-		cout << "adding server req\n";
 		write_message(server_fd, request.request, request.bytes_read);
 		serverReq.insert(make_pair(server_fd, request));
 		(*isHttps) = 0;
@@ -321,10 +315,8 @@ int Sockets::bandwidth_exceeded(int clientSock) {
 *******************************************************************************/
 int Sockets::transfer(int serverSock, int clientSock){
 
-	if (bandwidth_exceeded(clientSock)) {
-		cout << "\n\n ******* EXCEEDED *******\n\n";
+	if (bandwidth_exceeded(clientSock))
 		return 1;
-	}
 
 	char *message = NULL;
 	int received = read_message(serverSock, &message, RESPONSEBUFSIZE);
@@ -339,22 +331,18 @@ int Sockets::transfer(int serverSock, int clientSock){
 	
 	// Transfer in progress
 	if (received > 0) {
-		//cout << "Read message of size " << received << endl;
 		write_message(clientSock, message, received);
-		//cout << "Wrote " << size << " from " << serverSock << " to " << clientSock << endl;
 
 
 		if (clientBPSIter == clientBPSMap.end())
 			clientBPSMap.insert(make_pair(clientSock, new_bps));
 		else {
-			//cout << "updating!\n";
 			(clientBPSIter->second).bytes_read += received;
 		}
 
 				
 
 		if (httpsPairsIter == httpsPairs.end()) { // HTTP transfer, Need to save partial read
-			//cout << "\n***** Store to later cache ********\n";
 			// First read
 			if (serverRespIter == serverResp.end()) {
 				serverResponse response { received, message };
@@ -370,29 +358,22 @@ int Sockets::transfer(int serverSock, int clientSock){
 				response.data = merged;
 				serverRespIter->second = response;
 			}
-			//cout << "At the end" << endl;
 		}
 	}
 	//Transfer done
 	else {
-		cout << "^^^^^TRANSFER COMPLETE^^^^^^" << endl;
 		if (httpsPairsIter == httpsPairs.end() and serverRespIter != serverResp.end()) { // HTTP transfer, Need to cache complete
-			//cout << "Caching complete transfer\n";
 			serverResponse response = serverRespIter->second;
 			serverReqIter = serverReq.find(serverSock);
 			if (serverReqIter != serverReq.end()) {
 				userRequest request = serverReqIter->second; 
 				char * requestName = getObjectname(request.request);
-				cout << "Req namee: " << requestName << endl;
 				int TTL = getTimeToLive(response.data);
-				if (TTL > 0){
-					//cout << "caching: " << requestName << endl;
-					//cout << "Caching request of size " << request.bytes_read <<  " with response of size " << response.bytes_read << "; cache handles request parsing for GET object?\n";
+				if (TTL > 0 and requestName != NULL){
 					sessionCache.cacheElement(requestName, request.request, response.data, TTL, response.bytes_read);
 				}
 			}
 		}
-		//cout << "Removing keys b/c complete transfer\n";
 		httpsPairs.erase(clientSock);
 		httpsPairs.erase(serverSock);
 		clientBPSMap.erase(clientSock);
